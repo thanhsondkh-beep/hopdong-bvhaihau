@@ -119,6 +119,24 @@ tr:hover td{background:#f0f9ff;}
 .app-loading{position:fixed;inset:0;background:#1e3a8a;display:flex;align-items:center;justify-content:center;z-index:9998;flex-direction:column;gap:14px;}
 .app-loading span{color:#fff;font-size:14px;font-weight:600;}
 .spinner-lg{width:40px;height:40px;border:4px solid #ffffff40;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+/* ── Column Filter ── */
+.th-wrap{display:flex;align-items:center;gap:3px;white-space:nowrap;}.th-wrap span{flex:1;}
+.col-filter-btn{background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:4px;font-size:11px;color:#94a3b8;line-height:1;transition:all .15s;flex-shrink:0;}
+.col-filter-btn:hover{background:#e2e8f0;color:#374151;}.col-filter-btn.active{color:#fff;background:#1e40af;}
+.col-filter-panel{display:none;position:fixed;z-index:600;background:#fff;border:1.5px solid #3b82f6;border-radius:10px;box-shadow:0 8px 32px #0003;min-width:220px;max-width:280px;overflow:hidden;}
+.col-filter-panel.open{display:block;}
+.cfp-head{background:#1e40af;color:#fff;padding:8px 12px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:space-between;}
+.cfp-search{padding:7px 10px;border-bottom:1px solid #e2e8f0;}
+.cfp-search input{width:100%;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;outline:none;}
+.cfp-list{max-height:220px;overflow-y:auto;padding:4px 0;}
+.cfp-item{display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;}.cfp-item:hover{background:#f0f9ff;}
+.cfp-item input[type=checkbox]{width:14px;height:14px;accent-color:#1e40af;cursor:pointer;flex-shrink:0;}.cfp-item label{cursor:pointer;flex:1;}
+.cfp-foot{padding:7px 10px;border-top:1px solid #e2e8f0;display:flex;gap:6px;justify-content:flex-end;}
+.cfp-foot button{padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;}
+.active-filters-bar{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:6px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.af-tag{background:#1e40af;color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px;}
+.af-tag button{background:none;border:none;color:#fff;cursor:pointer;font-size:13px;line-height:1;padding:0;}
+th{position:relative;}
 </style>
 </head>
 <body>
@@ -179,13 +197,21 @@ tr:hover td{background:#f0f9ff;}
     </div>
     <div class="card" style="padding:0">
       <div class="table-wrap">
+    <!-- Active filters bar -->
+    <div class="active-filters-bar" id="activeFiltersBar" style="display:none"></div>
+    <!-- Column filter panel -->
+    <div class="col-filter-panel" id="colFilterPanel">
+      <div class="cfp-head"><span id="cfpTitle">Lọc</span><button onclick="dongPanel()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;line-height:1">✕</button></div>
+      <div class="cfp-search"><input type="text" id="cfpSearch" placeholder="Tìm..." oninput="locDanhSachPanel()"></div>
+      <div class="cfp-list" id="cfpList"></div>
+      <div class="cfp-foot">
+        <button onclick="chonTatCa()" style="background:#f1f5f9;color:#374151">Chọn tất cả</button>
+        <button onclick="boChonTatCa()" style="background:#f1f5f9;color:#374151">Bỏ chọn</button>
+        <button onclick="apDungLocCot()" style="background:#1e40af;color:#fff">✓ Áp dụng</button>
+      </div>
+    </div>
         <table id="mainTable">
-          <thead><tr>
-            <th>Số HĐ</th><th>Tên hợp đồng</th><th>Nhà cung cấp</th>
-            <th>QĐ Trúng thầu</th><th>Ngày TT</th><th>Tổng GT HĐ</th>
-            <th>Ngày ký</th><th>Ngày hết hạn</th><th>HH</th><th>BG</th>
-            <th>Trạng thái</th><th></th>
-          </tr></thead>
+          <thead><tr id="tableHead"></tr></thead>
           <tbody id="tbody"><tr><td colspan="12" style="text-align:center;padding:30px;color:#94a3b8"><span class="loading"></span>Đang tải...</td></tr></tbody>
         </table>
       </div>
@@ -586,7 +612,7 @@ async function taiDuLieu() {
 }
 
 // ── RENDER ──
-function renderAll() { renderStats(); renderTable(); }
+function renderAll() { renderStats(); renderTableHeader(); renderTable(); }
 
 function getStatusInfo(hd) {
   if (hd.daThanhLy) return { lbl:"Đã thanh lý", cls:"badge-liq", key:"liq" };
@@ -598,10 +624,11 @@ function getStatusInfo(hd) {
 }
 
 function renderStats() {
+  const rows = getFilteredRows(null);
   const cnt = { active:0, expiring:0, expired:0, liq:0 };
-  allHD.forEach(hd => { const s=getStatusInfo(hd); cnt[s.key]=(cnt[s.key]||0)+1; });
+  rows.forEach(hd => { const s=getStatusInfo(hd); cnt[s.key]=(cnt[s.key]||0)+1; });
   document.getElementById("stats").innerHTML =
-    statCard("📋","Tổng HĐ",allHD.length,"#3b82f6","") +
+    statCard("📋","Tổng HĐ",rows.length,"#3b82f6","") +
     statCard("✅","Đang hiệu lực",cnt.active,"#22c55e","Đang hiệu lực") +
     statCard("⏰","Sắp hết hạn",cnt.expiring,"#f59e0b","Sắp hết hạn") +
     statCard("❌","Hết hạn",cnt.expired,"#ef4444","Hết hạn") +
@@ -617,19 +644,162 @@ window.filterByStatus = function(lbl) {
   applyFilters();
 };
 
-function getFilteredRows() {
-  const q = (document.getElementById("search").value||"").toLowerCase();
+// ── CẤU HÌNH CỘT & LỌC CỘT ──
+const COLS = [
+  {key:"soHD",         lbl:"Số HĐ",          filterable:true},
+  {key:"ten",          lbl:"Tên hợp đồng",    filterable:true},
+  {key:"nhaCungCap",   lbl:"Nhà cung cấp",    filterable:true},
+  {key:"soQDTrungThau",lbl:"QĐ Trúng thầu",   filterable:true},
+  {key:"soNgayTT",     lbl:"Ngày TT",         filterable:false},
+  {key:"tongGTHD",     lbl:"Tổng GT HĐ",      filterable:false},
+  {key:"ngayKy",       lbl:"Ngày ký",         filterable:true},
+  {key:"ngayHetHan",   lbl:"Ngày hết hạn",    filterable:true},
+  {key:"hhCount",      lbl:"HH",              filterable:false},
+  {key:"bgCount",      lbl:"BG",              filterable:false},
+  {key:"trangThai",    lbl:"Trạng thái",      filterable:true},
+  {key:"_act",         lbl:"",                filterable:false}
+];
+let colFilters = {};
+let _panelKey = "";
+let pendingChecks = {};
+
+function getColValue(hd, key) {
+  switch(key) {
+    case "soHD":          return hd.soHD;
+    case "ten":           return hd.ten;
+    case "nhaCungCap":    return hd.nhaCungCap;
+    case "soQDTrungThau": return hd.soQDTrungThau||"---";
+    case "ngayKy":        return hd.ngayKy ? fmtNgay(hd.ngayKy) : "---";
+    case "ngayHetHan":    return hd.ngayHetHan ? fmtNgay(hd.ngayHetHan) : "---";
+    case "trangThai":     return getStatusInfo(hd).lbl;
+    default:              return "";
+  }
+}
+
+function renderTableHeader() {
+  document.getElementById("tableHead").innerHTML = COLS.map(col => {
+    if (!col.filterable) return `<th><div class="th-wrap"><span>${col.lbl}</span></div></th>`;
+    const hasFilter = colFilters[col.key] && Object.keys(colFilters[col.key]).length > 0;
+    return `<th id="th_${col.key}">
+      <div class="th-wrap">
+        <span>${col.lbl}</span>
+        <button class="col-filter-btn${hasFilter?" active":""}" onclick="moPanel('${col.key}',event)" title="${hasFilter?"Đang lọc — click để sửa":"Lọc theo "+col.lbl}">${hasFilter?"▼":"⌄"}</button>
+      </div></th>`;
+  }).join("");
+}
+
+function getFilteredRows(excludeKey) {
+  const q  = (document.getElementById("search").value||"").toLowerCase();
   const st = document.getElementById("filterStatus").value;
   return allHD.filter(hd => {
     if (q && !(hd.soHD.toLowerCase().includes(q)||hd.ten.toLowerCase().includes(q)||hd.nhaCungCap.toLowerCase().includes(q)||(hd.soQDTrungThau||"").toLowerCase().includes(q))) return false;
     if (st && getStatusInfo(hd).lbl !== st) return false;
+    for (const col of COLS) {
+      if (!col.filterable || col.key===excludeKey || !colFilters[col.key]) continue;
+      const v = String(getColValue(hd, col.key)||"---");
+      if (!colFilters[col.key][v]) return false;
+    }
     return true;
   });
 }
-window.applyFilters = function() { renderTable(); };
+
+window.applyFilters = function() {
+  renderTableHeader();
+  renderTable();
+  renderStats();
+  renderActiveFiltersBar();
+};
+
+function renderActiveFiltersBar() {
+  const tags = [];
+  COLS.forEach(col => {
+    if (!col.filterable || !colFilters[col.key]) return;
+    const vals = Object.keys(colFilters[col.key]);
+    if (!vals.length) return;
+    const display = vals.length<=2 ? vals.join(", ") : vals.slice(0,2).join(", ")+"...(+"+(vals.length-2)+")";
+    tags.push({key:col.key, lbl:col.lbl, display});
+  });
+  const bar = document.getElementById("activeFiltersBar");
+  const btnClear = document.getElementById("btnClearAllFilters");
+  if (!tags.length) {
+    bar.style.display="none";
+    if(btnClear) btnClear.style.display="none";
+    return;
+  }
+  bar.style.display="flex";
+  if(btnClear) btnClear.style.display="";
+  bar.innerHTML = '<span style="font-size:11px;color:#1e40af;font-weight:700;white-space:nowrap">🔽 Đang lọc:</span>' +
+    tags.map(t=>`<span class="af-tag">${t.lbl}: ${t.display}<button onclick="xoaLocCot('${t.key}')" title="Xoá">×</button></span>`).join("") +
+    `<button onclick="xoaTatCaLocCot()" style="margin-left:auto;background:#fee2e2;color:#ef4444;border:none;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer">✕ Xoá tất cả</button>`;
+}
+window.xoaLocCot = function(key) { colFilters[key]=null; applyFilters(); };
+window.xoaTatCaLocCot = function() {
+  COLS.forEach(col => colFilters[col.key]=null);
+  document.getElementById("search").value="";
+  document.getElementById("filterStatus").value="";
+  applyFilters();
+};
+
+// Panel
+window.moPanel = function(colKey, evt) {
+  evt.stopPropagation();
+  const panel = document.getElementById("colFilterPanel");
+  if (_panelKey===colKey && panel.classList.contains("open")) { dongPanel(); return; }
+  _panelKey = colKey;
+  const col = COLS.find(c=>c.key===colKey);
+  document.getElementById("cfpTitle").textContent = "Lọc: " + col.lbl;
+  document.getElementById("cfpSearch").value = "";
+  const baseRows = getFilteredRows(colKey);
+  const vals = {};
+  baseRows.forEach(hd => { const v=String(getColValue(hd,colKey)||"---"); vals[v]=(vals[v]||0)+1; });
+  const existing = colFilters[colKey]||null;
+  pendingChecks = {};
+  Object.keys(vals).sort((a,b)=>a.localeCompare(b,"vi")).forEach(v => {
+    pendingChecks[v] = existing===null ? true : (existing[v]===true);
+  });
+  renderPanelList(vals);
+  const th = document.getElementById("th_"+colKey);
+  const rect = th.getBoundingClientRect();
+  panel.style.top = (rect.bottom + window.scrollY + 2) + "px";
+  panel.style.left = Math.min(rect.left, window.innerWidth-290) + "px";
+  panel.classList.add("open");
+};
+function renderPanelList(counts) {
+  const q = (document.getElementById("cfpSearch").value||"").toLowerCase();
+  const sorted = Object.keys(pendingChecks).sort((a,b)=>a.localeCompare(b,"vi")).filter(v=>!q||v.toLowerCase().includes(q));
+  document.getElementById("cfpList").innerHTML = sorted.map(v => {
+    const chk = pendingChecks[v]!==false;
+    const id = "cfp_"+Math.random().toString(36).slice(2,8);
+    return `<div class="cfp-item"><input type="checkbox" id="${id}" ${chk?"checked":""} onchange="togglePending('${v.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}',this.checked)"><label for="${id}">${v}</label><span style="color:#94a3b8;font-size:10px">(${counts[v]||0})</span></div>`;
+  }).join("") || '<div style="text-align:center;padding:12px;color:#94a3b8;font-size:12px">Không có kết quả</div>';
+}
+window.locDanhSachPanel = function() {
+  const baseRows = getFilteredRows(_panelKey);
+  const vals = {};
+  baseRows.forEach(hd=>{ const v=String(getColValue(hd,_panelKey)||"---"); vals[v]=(vals[v]||0)+1; });
+  Object.keys(vals).forEach(v=>{ if(pendingChecks[v]===undefined) pendingChecks[v]=true; });
+  renderPanelList(vals);
+};
+window.togglePending = function(val,chk){ pendingChecks[val]=chk; };
+window.chonTatCa = function(){ Object.keys(pendingChecks).forEach(k=>pendingChecks[k]=true); locDanhSachPanel(); };
+window.boChonTatCa = function(){ Object.keys(pendingChecks).forEach(k=>pendingChecks[k]=false); locDanhSachPanel(); };
+window.apDungLocCot = function() {
+  const selected={};
+  const allTrue = Object.keys(pendingChecks).every(k=>pendingChecks[k]);
+  Object.keys(pendingChecks).forEach(k=>{ if(pendingChecks[k]) selected[k]=true; });
+  colFilters[_panelKey] = (allTrue||Object.keys(selected).length===0) ? null : selected;
+  dongPanel(); applyFilters();
+};
+window.dongPanel = function() { document.getElementById("colFilterPanel").classList.remove("open"); _panelKey=""; };
+document.addEventListener("click", e => {
+  const panel = document.getElementById("colFilterPanel");
+  if (panel&&panel.classList.contains("open")&&!panel.contains(e.target)&&!e.target.closest(".col-filter-btn")) dongPanel();
+});
+
+
 
 function renderTable() {
-  const rows = getFilteredRows();
+  const rows = getFilteredRows(null);
   if (!rows.length) {
     document.getElementById("tbody").innerHTML = '<tr><td colspan="12" style="text-align:center;padding:30px;color:#94a3b8">Không có hợp đồng nào phù hợp</td></tr>';
     return;
