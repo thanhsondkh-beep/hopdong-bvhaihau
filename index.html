@@ -217,7 +217,9 @@ th{position:relative;}
     <div class="header-btns">
       <span id="userEmailDisplay" style="color:#bfdbfe;font-size:11px;padding:5px 10px;background:#ffffff18;border-radius:7px"></span>
       <button class="btn btn-outline" style="background:transparent;color:#fff;border-color:#93c5fd" onclick="xuatCSV()">📥 Xuất CSV</button>
+      <button class="btn btn-outline" style="background:#fef3c7;color:#92400e;border-color:#fde68a" onclick="moModalCongNo()">📊 Công nợ NCC</button>
       <label class="btn btn-outline" style="background:transparent;color:#86efac;border-color:#86efac;cursor:pointer;font-size:12px" title="Import dữ liệu từ file JSON xuất từ Apps Script cũ">📤 Import dữ liệu cũ<input type="file" id="importJSONFile" accept=".json" style="display:none" onchange="importJSONMigration(this)"></label>
+      <button class="btn" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="moModalNCC()">🏢 Danh mục NCC</button>
       <button class="btn" style="background:#fff;color:#1e3a8a" onclick="moFormThem()">+ Thêm hợp đồng</button>
       <button class="btn btn-outline" style="background:transparent;color:#fca5a5;border-color:#fca5a5;font-size:12px" onclick="doLogout()">Đăng xuất</button>
     </div>
@@ -272,7 +274,11 @@ th{position:relative;}
         <div class="field"><label>Ngày ký</label><input type="date" id="f_ngayKy"></div>
         <div class="field"><label>Ngày hết hạn *</label><input type="date" id="f_ngayHH"></div>
         <div class="field full"><label>Tên hợp đồng *</label><input id="f_ten" placeholder="Cung cấp vật tư..."></div>
-        <div class="field full"><label>Nhà cung cấp (Nhà thầu)</label><input id="f_ncc" placeholder="Tên công ty..."></div>
+        <div class="field"><label>Nhà cung cấp (Nhà thầu)</label>
+          <input id="f_ncc" placeholder="Tên công ty..." autocomplete="off" oninput="filterNCCSuggest(this.value)" onblur="setTimeout(()=>hideNCCSuggest(),200)">
+          <div id="ncc_suggest" style="display:none;position:absolute;z-index:999;background:#fff;border:1.5px solid #bfdbfe;border-radius:8px;max-height:180px;overflow-y:auto;box-shadow:0 4px 16px #0002;min-width:280px;font-size:12px"></div>
+        </div>
+        <div class="field"><label>Mã nhà cung cấp</label><input id="f_maNCC" placeholder="VD: NCC-001..."></div>
         <div class="field full"><label>Thông tin chi tiết nhà thầu</label><textarea id="f_thongTinNhaThau" rows="3" placeholder="Địa chỉ, MST, SĐT, người đại diện, tài khoản ngân hàng..." style="width:100%;resize:vertical;font-size:12px;border-radius:7px;border:1px solid #e2e8f0;padding:8px;outline:none;font-family:inherit;background:#fff" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea></div>
         <div class="field"><label>⏱ Số ngày thanh toán</label><input type="number" id="f_soNgayTT" placeholder="VD: 30" min="0" style="text-align:right"><div style="font-size:10px;color:#94a3b8;margin-top:3px">Hạn TT = Ngày BG + số ngày - 1</div></div>
       </div>
@@ -550,6 +556,170 @@ th{position:relative;}
   </div>
 </div>
 
+<!-- MODAL: BÁO CÁO CÔNG NỢ NCC -->
+<div class="modal-overlay" id="modalCongNo">
+  <div class="modal" style="max-width:99.5vw;max-height:95vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <span class="modal-title">📊 Báo cáo đối chiếu công nợ nhà cung cấp</span>
+      <button class="btn btn-outline btn-sm" onclick="dongModal('modalCongNo')">✕ Đóng</button>
+    </div>
+    <!-- Bộ lọc -->
+    <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:flex-end">
+        <div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:4px;font-weight:600">Nhà cung cấp / Mã NCC</div>
+          <input id="cn_search" placeholder="🔍 Nhập tên hoặc mã NCC..." style="font-size:13px" oninput="filterCNSuggest(this.value)" onblur="setTimeout(()=>hideCNSuggest(),200)" autocomplete="off">
+          <div id="cn_suggest" style="display:none;position:absolute;z-index:999;background:#fff;border:1.5px solid #bfdbfe;border-radius:8px;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px #0002;min-width:320px;font-size:12px"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:4px;font-weight:600">Từ ngày</div>
+          <input type="date" id="cn_tuNgay">
+        </div>
+        <div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:4px;font-weight:600">Đến ngày</div>
+          <input type="date" id="cn_denNgay">
+        </div>
+        <button class="btn btn-primary" onclick="xemCongNo()">🔍 Xem báo cáo</button>
+      </div>
+      <div id="cn_nccInfo" style="margin-top:10px;font-size:12px;color:#374151;display:none"></div>
+    </div>
+    <!-- Kết quả -->
+    <div id="cn_result"></div>
+  </div>
+</div>
+
+<!-- MODAL: DANH MỤC NHÀ CUNG CẤP -->
+<div class="modal-overlay" id="modalNCC">
+  <div class="modal" style="max-width:900px;max-height:92vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <span class="modal-title">🏢 Danh mục nhà cung cấp</span>
+      <button class="btn btn-outline btn-sm" onclick="dongModal('modalNCC')">✕ Đóng</button>
+    </div>
+    <!-- Form thêm/sửa NCC -->
+    <div id="formNCC" style="background:#f0f9ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:14px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:10px" id="formNCCTitle">➕ Thêm nhà cung cấp mới</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Mã NCC <span style="color:#94a3b8">(tự động)</span></div>
+          <input id="ncc_ma" placeholder="NCC-001" style="background:#f8fafc;color:#64748b" readonly>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên nhà cung cấp *</div>
+          <input id="ncc_ten" placeholder="Tên công ty...">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên viết tắt</div>
+          <input id="ncc_vietTat" placeholder="VD: DPBB...">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Mã số thuế</div>
+          <input id="ncc_mst" placeholder="0100000000">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Số điện thoại</div>
+          <input id="ncc_sdt" placeholder="024...">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Email</div>
+          <input id="ncc_email" placeholder="contact@...">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Người đại diện</div>
+          <input id="ncc_nguoiDD" placeholder="Họ và tên...">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Tài khoản ngân hàng</div>
+          <input id="ncc_tknh" placeholder="Số TK - Tên NH...">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Địa chỉ</div>
+          <input id="ncc_diaChi" placeholder="Địa chỉ...">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-outline btn-sm" id="btnHuyNCC" onclick="huyFormNCC()" style="display:none">Huỷ</button>
+        <button class="btn btn-primary btn-sm" onclick="luuNCC()" id="btnLuuNCC">💾 Thêm NCC</button>
+      </div>
+    </div>
+    <!-- Tìm kiếm -->
+    <div style="margin-bottom:10px">
+      <input id="ncc_search" placeholder="🔍 Tìm theo mã, tên, MST..." style="width:100%;font-size:13px" oninput="renderNCCTable()">
+    </div>
+    <!-- Bảng NCC -->
+    <div id="nccTableWrap"></div>
+  </div>
+</div>
+
+<!-- MODAL: LỊCH SỬ ĐIỀU CHỈNH GT HĐ -->
+<div class="modal-ct-overlay" id="modalLichSuDCHD">
+  <div class="modal-ct" style="max-width:700px;max-height:88vh;overflow-y:auto">
+    <div class="modal-header">
+      <span class="modal-title">🔄 Lịch sử điều chỉnh giá trị HĐ</span>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('modalLichSuDCHD').classList.remove('open')">✕</button>
+    </div>
+    <div id="lichSuDCHDContent"></div>
+  </div>
+</div>
+
+<!-- MODAL: ĐIỀU CHỈNH SỐ LƯỢNG HĐ -->
+<div class="modal-ct-overlay" id="modalDieuChinh">
+  <div class="modal-ct" style="max-width:700px;max-height:90vh;overflow-y:auto">
+    <div class="modal-header">
+      <span class="modal-title" id="dcTitle">🔄 Điều chỉnh số lượng</span>
+      <button class="btn btn-outline btn-sm" onclick="dongModalDC()">✕</button>
+    </div>
+    <!-- Thông tin mặt hàng -->
+    <div id="dcItemInfo" style="background:#f0f9ff;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px"></div>
+    <!-- Form điều chỉnh mới -->
+    <div style="background:#fffbeb;border:1.5px solid #fde068;border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:10px">➕ Thêm lần điều chỉnh</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Loại điều chỉnh</div>
+          <select id="dc_loai" style="width:100%">
+            <option value="tang">➕ Tăng số lượng</option>
+            <option value="giam">➖ Giảm số lượng</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Ngày điều chỉnh *</div>
+          <input type="date" id="dc_ngay">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Số lượng điều chỉnh *</div>
+          <input type="number" id="dc_soLuong" placeholder="0" min="1" style="text-align:right" oninput="capNhatDCPreview()">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div style="padding:8px 12px;background:#f0fdf4;border-radius:7px;align-self:center">
+          <div style="font-size:10px;color:#64748b">Số tiền điều chỉnh</div>
+          <div style="font-weight:700;color:#22c55e;font-size:13px" id="dc_tien_preview">0 đ</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Công văn điều chỉnh</div>
+          <input id="dc_congVan" placeholder="VD: CV số 123/BV...">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Phụ lục điều chỉnh</div>
+          <input id="dc_phuLuc" placeholder="VD: PLĐ01/2026...">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:flex-end">
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Ghi chú</div>
+          <input id="dc_ghiChu" placeholder="Lý do điều chỉnh...">
+        </div>
+        <button class="btn btn-primary" onclick="luuDieuChinh()">💾 Lưu điều chỉnh</button>
+      </div>
+    </div>
+    <!-- Lịch sử điều chỉnh -->
+    <div>
+      <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">📋 Lịch sử điều chỉnh</div>
+      <div id="dcLichSu"></div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: CHỈNH SỬA HÀNG HÓA TRONG HĐ -->
 <div class="modal-ct-overlay" id="modalSuaHH">
   <div class="modal-ct" style="max-width:640px;max-height:90vh;overflow-y:auto">
@@ -639,6 +809,7 @@ onAuthStateChanged(auth, user => {
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("app").style.display = "block";
     taiDuLieu();
+    loadNCC();
   } else {
     document.getElementById("loginScreen").style.display = "flex";
     document.getElementById("app").style.display = "none";
@@ -688,7 +859,7 @@ async function taiDuLieu() {
     snapHH.forEach(d => {
       const r = d.data();
       if (!hhMap[r.soHD]) hhMap[r.soHD] = [];
-      hhMap[r.soHD].push({ id: r.maHH, ten: r.ten, dvt: r.dvt, soLuong: r.soLuong||0, donGia: r.donGia||0, maThuoc:r.maThuoc||"", hoatChat:r.hoatChat||"", nongDo:r.nongDo||"", dangBaoShe:r.dangBaoShe||"", quyCach:r.quyCach||"", hanDung:r.hanDung||"", sdk:r.sdk||"", coSoSX:r.coSoSX||"", nuocSX:r.nuocSX||"", ghiChu:r.ghiChu||"" });
+      hhMap[r.soHD].push({ id: r.maHH, ten: r.ten, dvt: r.dvt, soLuong: r.soLuong||0, donGia: r.donGia||0, maThuoc:r.maThuoc||"", hoatChat:r.hoatChat||"", nongDo:r.nongDo||"", dangBaoShe:r.dangBaoShe||"", quyCach:r.quyCach||"", hanDung:r.hanDung||"", sdk:r.sdk||"", coSoSX:r.coSoSX||"", nuocSX:r.nuocSX||"", ghiChu:r.ghiChu||"", tongDC:r.tongDC||0 });
     });
 
     snapBGHH.forEach(d => {
@@ -718,7 +889,7 @@ async function taiDuLieu() {
       const r = d.data();
       const soHD = unsafeId(d.id); // decode "/" back from "__SL__"
       allHD.push({
-        soHD: soHD, ten: r.ten||"", nhaCungCap: r.nhaCungCap||"",
+        soHD: soHD, ten: r.ten||"", nhaCungCap: r.nhaCungCap||"", maNCC: r.maNCC||"",
         soQDTrungThau: r.soQDTrungThau||"",
         ngayTrungThau: r.ngayTrungThau||"", ngayKy: r.ngayKy||"",
         ngayHetHan: r.ngayHetHan||"", trangThai: r.trangThai||"",
@@ -1164,7 +1335,7 @@ function renderTable() {
     return `<tr onclick="moChiTiet('${hd.soHD}')" style="cursor:pointer">
       <td style="font-weight:700;color:#1e40af;white-space:nowrap">${hd.soHD}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${hd.ten}">${hd.ten}</td>
-      <td style="color:#64748b;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${hd.nhaCungCap}</td>
+      <td style="color:#64748b;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${hd.nhaCungCap}${hd.maNCC?'<br><span style="font-size:10px;color:#94a3b8">['+hd.maNCC+']</span>':''}</td>
       <td style="color:#7c3aed;white-space:nowrap">${hd.soQDTrungThau||"---"}</td>
       <td style="text-align:center">${hd.soNgayThanhToan>0?`<span style="background:#eff6ff;color:#1e40af;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">${hd.soNgayThanhToan} ngày</span>`:"---"}</td>
       <td style="font-weight:600;white-space:nowrap">${fmtSo(tv)} đ</td>
@@ -1182,13 +1353,16 @@ function renderTable() {
 
 // ── CHI TIẾT ──
 window.moChiTiet = function(soHD) {
+  try {
   currentHD = allHD.find(h => h.soHD === soHD);
   if (!currentHD) return;
   const hd = currentHD, st = getStatusInfo(hd);
   const tv = calcTotal(hd.hangHoa||[]);
   const td = calcTongBanGiao(hd.banGiao||[]);
   const tt = calcTongThanhToan(hd.banGiao||[]);
-  const pct = tv > 0 ? Math.min(100, Math.round(td/tv*100)) : 0;
+  const tvDC = (hd.hangHoa||[]).reduce((s,it)=>s+((Number(it.soLuong)||0)+(Number(it.tongDC)||0))*(Number(it.donGia)||0), 0);
+  const coDC = (hd.hangHoa||[]).some(it=>(it.tongDC||0)!==0);
+  const pct = tvDC > 0 ? Math.min(100, Math.round(td/tvDC*100)) : (tv > 0 ? Math.min(100, Math.round(td/tv*100)) : 0);
   bgDateFilter = "";
   document.getElementById("ct_soHD").textContent = hd.soHD;
   document.getElementById("ct_badge").innerHTML = `<span class="badge ${st.cls}">${st.lbl}</span>`;
@@ -1202,11 +1376,13 @@ window.moChiTiet = function(soHD) {
     ["🏆 QĐ Trúng thầu",hd.soQDTrungThau||"---","#7c3aed"],
     ["⏱ Số ngày TT",hd.soNgayThanhToan>0?hd.soNgayThanhToan+" ngày":"---","#1e40af"],
     ["💰 Tổng GT HĐ",fmtSo(tv)+" đ","#8b5cf6"],
+    ["🔄 GT HĐ sau ĐC", coDC ? '<span onclick="xemLichSuDCHD()" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted" title="Click để xem lịch sử điều chỉnh">'+fmtSo(tvDC)+' đ 🔍</span>' : "Chưa ĐC", "#7c3aed"],
     ["📦 Đã bàn giao",fmtSo(td)+" đ","#22c55e"],
     ["🔄 Số đợt bàn giao",soDotBG+" đợt","#0ea5e9"],
     ["💳 Đã thanh toán",fmtSo(tt)+" đ","#059669"],
     ["⏳ Chưa TT",fmtSo(td-tt)+" đ",td-tt>0?"#ef4444":"#22c55e"],
     ["📊 Còn lại",fmtSo(tv-td)+" đ",tv-td<=0?"#22c55e":"#f59e0b"],
+    ["📊 Còn lại sau ĐC",coDC?fmtSo(tvDC-td)+" đ":"---",(tvDC-td)<=0?"#22c55e":"#f59e0b"],
     ["📁 Thanh lý",hd.daThanhLy?fmtNgay(hd.ngayThanhLy):"Chưa","#6b7280"],
   ].map(x=>`<div class="info-card" style="border-top:3px solid ${x[2]}"><div class="info-card-lbl">${x[0]}</div><div class="info-card-val" style="color:${x[2]}">${x[1]}</div></div>`).join("");
   const pf = document.getElementById("ct_progress");
@@ -1219,6 +1395,7 @@ window.moChiTiet = function(soHD) {
     ? `<button class="btn btn-danger btn-sm" onclick="xacNhanXoa('${hd.soHD}')">🗑️ Xoá</button>`
     : `<span style="font-size:11px;color:#94a3b8;padding:5px 8px;background:#f1f5f9;border-radius:6px">🔒 Không có quyền xoá</span>`;
   doiTab("hh"); moModal("modalCT");
+  } catch(e) { console.error("moChiTiet error:", e); showToast("Lỗi mở HĐ: " + e.message, "error"); }
 };
 
 window.doiTab = function(tab) {
@@ -1280,7 +1457,359 @@ function renderTabNT() {
 }
 
 
-// ── TAB BÁO CÁO THỰC HIỆN HỢP ĐỒNG ──
+// ── BÁO CÁO CÔNG NỢ NCC ──
+let _cnNCC = null; // NCC đang chọn
+
+window.moModalCongNo = async function() {
+  await loadNCC();
+  _cnNCC = null;
+  document.getElementById("cn_search").value = "";
+  document.getElementById("cn_tuNgay").value = "";
+  document.getElementById("cn_denNgay").value = "";
+  document.getElementById("cn_nccInfo").style.display = "none";
+  document.getElementById("cn_result").innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;font-size:13px">Chọn nhà cung cấp và nhấn Xem báo cáo</div>';
+  moModal("modalCongNo");
+};
+
+window.filterCNSuggest = function(val) {
+  if (!val) { hideCNSuggest(); return; }
+  const q = val.toLowerCase();
+  // Search in allNCC + unique NCC from allHD
+  const hits = [];
+  const seen = new Set();
+  // First search NCC catalog
+  allNCC.forEach(n => {
+    if ((n.ten||"").toLowerCase().includes(q)||(n.ma||"").toLowerCase().includes(q)) {
+      if (!seen.has(n.ma)) { seen.add(n.ma); hits.push({ma:n.ma, ten:n.ten, source:"catalog"}); }
+    }
+  });
+  // Then from HD list
+  allHD.forEach(hd => {
+    const ncc = hd.nhaCungCap||""; const ma = hd.maNCC||"";
+    if ((ncc.toLowerCase().includes(q)||ma.toLowerCase().includes(q)) && !seen.has(ncc)) {
+      seen.add(ncc); hits.push({ma:ma||"—", ten:ncc, source:"hd"});
+    }
+  });
+  if (!hits.length) { hideCNSuggest(); return; }
+  const el = document.getElementById("cn_suggest");
+  el.innerHTML = hits.slice(0,10).map(n =>
+    `<div onclick="chonCNNCC('${escHtml(n.ma)}','${escHtml(n.ten)}')"
+      style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9"
+      onmouseenter="this.style.background='#eff6ff'" onmouseleave="this.style.background=''">
+      <span style="color:#1e40af;font-weight:700">${n.ma||'—'}</span>
+      <span style="margin-left:8px">${n.ten}</span>
+      ${n.source==='catalog'?'<span style="font-size:10px;color:#22c55e;margin-left:4px">✓ DS</span>':''}
+    </div>`
+  ).join("");
+  el.style.display = "block";
+};
+window.chonCNNCC = function(ma, ten) {
+  _cnNCC = {ma, ten};
+  document.getElementById("cn_search").value = ten + (ma&&ma!=="—" ? " ["+ma+"]" : "");
+  hideCNSuggest();
+  // Show NCC info
+  const ncc = allNCC.find(n=>n.ma===ma||n.ten===ten);
+  const infoEl = document.getElementById("cn_nccInfo");
+  if (ncc) {
+    infoEl.innerHTML = `<span style="background:#eff6ff;border-radius:8px;padding:5px 12px">
+      🏢 <b>${ncc.ten}</b> · Mã: <b style="color:#1e40af">${ncc.ma}</b>
+      ${ncc.mst?' · MST: '+ncc.mst:''} ${ncc.nguoiDD?' · ĐD: '+ncc.nguoiDD:''}
+      ${ncc.sdt?' · SĐT: '+ncc.sdt:''}
+    </span>`;
+    infoEl.style.display = "block";
+  } else { infoEl.style.display = "none"; }
+};
+window.hideCNSuggest = function() {
+  const el = document.getElementById("cn_suggest");
+  if (el) el.style.display = "none";
+};
+
+window.xemCongNo = function() {
+  if (!_cnNCC) { showToast("Chọn nhà cung cấp trước!","error"); return; }
+  const tuNgay = document.getElementById("cn_tuNgay").value;
+  const denNgay = document.getElementById("cn_denNgay").value;
+  // Filter HĐ theo NCC
+  const hdList = allHD.filter(hd => {
+    const match = hd.nhaCungCap === _cnNCC.ten || (_cnNCC.ma && _cnNCC.ma!=="—" && hd.maNCC === _cnNCC.ma);
+    if (!match) return false;
+    return true;
+  });
+  if (!hdList.length) {
+    document.getElementById("cn_result").innerHTML = '<div style="text-align:center;padding:30px;color:#f59e0b;font-size:13px">⚠️ Không tìm thấy hợp đồng nào của nhà cung cấp này</div>';
+    return;
+  }
+
+  // Build báo cáo
+  let tongChuaTT = 0, tongDaTT = 0, tongTong = 0;
+  let allRows = [];
+
+  hdList.forEach(hd => {
+    const tvHD = calcTotal(hd.hangHoa||[]);
+    (hd.banGiao||[]).forEach(bg => {
+      const ngayBG = bg.ngay||"";
+      // Filter theo ngày nếu có
+      if (tuNgay && ngayBG < tuNgay) return;
+      if (denNgay && ngayBG > denNgay) return;
+      const soHD = bg.soHoaDon||"";
+      const ngayHD = bg.ngayHoaDon||bg.ngay||"";
+      const tongBG = (bg.items||[]).reduce((s,it)=>s+(it.soLuong||0)*(it.donGia||0),0);
+      const trangThai = bg.trangThaiTT||"unpaid";
+      const daTT = trangThai==="paid" ? tongBG : (trangThai==="partial" ? (Number(bg.soTienDaTT)||0) : 0);
+      const chuaTT = tongBG - daTT;
+      const ngayTT = bg.ngayTT||"";
+      const hanTT = bg.hanTT||"";
+      tongTong += tongBG;
+      tongDaTT += daTT;
+      tongChuaTT += chuaTT;
+      allRows.push({soHD:hd.soHD, tenHD:hd.ten, ngayBG, soHoaDon:soHD, ngayHoaDon:ngayHD, tongBG, daTT, chuaTT, trangThai, ngayTT, hanTT, maBG:bg.id});
+    });
+  });
+
+  // Filter rows có dữ liệu
+  if (!allRows.length) {
+    document.getElementById("cn_result").innerHTML = '<div style="text-align:center;padding:30px;color:#f59e0b;font-size:13px">⚠️ Không có bàn giao nào trong khoảng thời gian này</div>';
+    return;
+  }
+  allRows.sort((a,b)=>a.ngayBG.localeCompare(b.ngayBG));
+
+  const ttColor = t => t==="paid"?"#22c55e":t==="partial"?"#f59e0b":"#ef4444";
+  const ttLabel = t => t==="paid"?"✅ Đã TT":t==="partial"?"⚡ Một phần":"❌ Chưa TT";
+  const rows = allRows.map((r,i) => `<tr style="background:${i%2===0?'#fff':'#f8fafc'}">
+    <td style="padding:6px 8px;font-weight:600;color:#1e40af;white-space:nowrap">${r.soHD}</td>
+    <td style="padding:6px 8px;color:#64748b;font-size:11px">${r.tenHD}</td>
+    <td style="padding:6px 8px;text-align:center">${fmtNgay(r.ngayBG)}</td>
+    <td style="padding:6px 8px;color:#7c3aed">${r.soHoaDon||'—'}</td>
+    <td style="padding:6px 8px;text-align:center">${r.ngayHoaDon?fmtNgay(r.ngayHoaDon):'—'}</td>
+    <td style="padding:6px 8px;text-align:right;font-weight:700">${fmtSo(r.tongBG)} đ</td>
+    <td style="padding:6px 8px;text-align:right;color:#22c55e;font-weight:700">${fmtSo(r.daTT)} đ</td>
+    <td style="padding:6px 8px;text-align:right;color:${r.chuaTT>0?'#ef4444':'#22c55e'};font-weight:700">${fmtSo(r.chuaTT)} đ</td>
+    <td style="padding:6px 8px;text-align:center"><span style="background:${ttColor(r.trangThai)}20;color:${ttColor(r.trangThai)};border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">${ttLabel(r.trangThai)}</span></td>
+    <td style="padding:6px 8px;text-align:center;font-size:11px">${r.ngayTT?fmtNgay(r.ngayTT):'—'}</td>
+    <td style="padding:6px 8px;text-align:center;font-size:11px;color:${r.hanTT&&r.hanTT<todayStr()?'#ef4444':'#374151'}">${r.hanTT?fmtNgay(r.hanTT):'—'}</td>
+  </tr>`).join("");
+
+  const summary = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+    <div style="background:#f0fdf4;border-radius:10px;padding:10px 16px;min-width:140px">
+      <div style="font-size:11px;color:#64748b">Tổng giá trị BG</div>
+      <div style="font-weight:800;font-size:15px;color:#1e3a8a">${fmtSo(tongTong)} đ</div>
+    </div>
+    <div style="background:#f0fdf4;border-radius:10px;padding:10px 16px;min-width:140px">
+      <div style="font-size:11px;color:#64748b">Đã thanh toán</div>
+      <div style="font-weight:800;font-size:15px;color:#22c55e">${fmtSo(tongDaTT)} đ</div>
+    </div>
+    <div style="background:${tongChuaTT>0?'#fee2e2':'#f0fdf4'};border-radius:10px;padding:10px 16px;min-width:140px">
+      <div style="font-size:11px;color:#64748b">Chưa thanh toán</div>
+      <div style="font-weight:800;font-size:15px;color:${tongChuaTT>0?'#ef4444':'#22c55e'}">${fmtSo(tongChuaTT)} đ</div>
+    </div>
+    <div style="background:#eff6ff;border-radius:10px;padding:10px 16px;min-width:140px">
+      <div style="font-size:11px;color:#64748b">Số hợp đồng</div>
+      <div style="font-weight:800;font-size:15px;color:#1e40af">${hdList.length}</div>
+    </div>
+    <div style="margin-left:auto;align-self:center">
+      <button class="btn btn-success" onclick="xuatCongNoExcel()">📊 Xuất Excel</button>
+    </div>
+  </div>`;
+
+  document.getElementById("cn_result").innerHTML = summary + `<div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#1e3a8a;color:#fff">
+        <th style="padding:7px 8px;text-align:left">Số HĐ</th>
+        <th style="padding:7px 8px;text-align:left">Tên HĐ</th>
+        <th style="padding:7px 8px;text-align:center">Ngày BG</th>
+        <th style="padding:7px 8px;text-align:left">Số hóa đơn</th>
+        <th style="padding:7px 8px;text-align:center">Ngày hóa đơn</th>
+        <th style="padding:7px 8px;text-align:right">Tổng tiền BG</th>
+        <th style="padding:7px 8px;text-align:right">Đã thanh toán</th>
+        <th style="padding:7px 8px;text-align:right">Chưa TT</th>
+        <th style="padding:7px 8px;text-align:center">Trạng thái</th>
+        <th style="padding:7px 8px;text-align:center">Ngày TT</th>
+        <th style="padding:7px 8px;text-align:center">Hạn TT</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr style="background:#f0fdf4;font-weight:700">
+        <td colspan="5" style="padding:7px 8px;text-align:right">Tổng cộng:</td>
+        <td style="padding:7px 8px;text-align:right;color:#1e3a8a">${fmtSo(tongTong)} đ</td>
+        <td style="padding:7px 8px;text-align:right;color:#22c55e">${fmtSo(tongDaTT)} đ</td>
+        <td style="padding:7px 8px;text-align:right;color:${tongChuaTT>0?'#ef4444':'#22c55e'}">${fmtSo(tongChuaTT)} đ</td>
+        <td colspan="3"></td>
+      </tr></tfoot>
+    </table></div>`;
+  // Store for Excel export
+  window._cnRows = allRows;
+  window._cnTen = _cnNCC.ten;
+  window._cnMa = _cnNCC.ma;
+};
+
+window.xuatCongNoExcel = function() {
+  if (!window._cnRows||!window._cnRows.length) return;
+  const headers = ["Số HĐ","Tên HĐ","Ngày BG","Số hóa đơn","Ngày HĐ","Tổng tiền BG","Đã TT","Chưa TT","Trạng thái","Ngày TT","Hạn TT"];
+  const rows = window._cnRows.map(r=>[r.soHD,r.tenHD,fmtNgay(r.ngayBG),r.soHoaDon||"",r.ngayHoaDon?fmtNgay(r.ngayHoaDon):"",r.tongBG,r.daTT,r.chuaTT,r.trangThai==="paid"?"Đã TT":r.trangThai==="partial"?"Một phần":"Chưa TT",r.ngayTT?fmtNgay(r.ngayTT):"",r.hanTT?fmtNgay(r.hanTT):""]);
+  const wb = XLSX.utils.book_new();
+  const sheetData = [
+    ["BÁO CÁO CÔNG NỢ NHÀ CUNG CẤP"],
+    ["Nhà cung cấp:", window._cnTen, "", "Mã NCC:", window._cnMa],
+    ["Ngày xuất:", fmtNgay(todayStr())],
+    [],
+    headers,
+    ...rows
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws["!cols"] = [14,18,10,14,10,14,14,14,10,10,10].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws, "CongNoNCC");
+  XLSX.writeFile(wb, "CongNo_"+window._cnTen.substring(0,20).replace(/\s/g,"_")+"_"+todayStr()+".xlsx");
+  showToast("Đã xuất Excel!");
+};
+
+
+let allNCC = [], _editNCCMa = null;
+
+async function loadNCC() {
+  try {
+    const snap = await getDocs(query(collection(db,"nhaCungCap"), orderBy("ma")));
+    allNCC = [];
+    snap.forEach(d => allNCC.push({id:d.id, ...d.data()}));
+  } catch(e) { allNCC = []; }
+}
+
+function genMaNCC() {
+  if (!allNCC.length) return "NCC-001";
+  const nums = allNCC.map(n => {
+    const m = (n.ma||"").match(/NCC-(\d+)/);
+    return m ? parseInt(m[1]) : 0;
+  });
+  const next = Math.max(...nums) + 1;
+  return "NCC-" + String(next).padStart(3,"0");
+}
+
+window.moModalNCC = async function() {
+  await loadNCC();
+  _editNCCMa = null;
+  document.getElementById("ncc_ma").value = genMaNCC();
+  document.getElementById("ncc_ten").value = "";
+  document.getElementById("ncc_vietTat").value = "";
+  document.getElementById("ncc_mst").value = "";
+  document.getElementById("ncc_sdt").value = "";
+  document.getElementById("ncc_email").value = "";
+  document.getElementById("ncc_nguoiDD").value = "";
+  document.getElementById("ncc_tknh").value = "";
+  document.getElementById("ncc_diaChi").value = "";
+  document.getElementById("formNCCTitle").textContent = "➕ Thêm nhà cung cấp mới";
+  document.getElementById("btnLuuNCC").textContent = "💾 Thêm NCC";
+  document.getElementById("btnHuyNCC").style.display = "none";
+  renderNCCTable();
+  moModal("modalNCC");};
+
+window.renderNCCTable = function() {
+  const q = (document.getElementById("ncc_search")||{value:""}).value.toLowerCase();
+  const list = allNCC.filter(n =>
+    !q || (n.ma||"").toLowerCase().includes(q) ||
+    (n.ten||"").toLowerCase().includes(q) ||
+    (n.mst||"").toLowerCase().includes(q) ||
+    (n.vietTat||"").toLowerCase().includes(q)
+  );
+  if (!list.length) {
+    document.getElementById("nccTableWrap").innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-size:12px">Chưa có nhà cung cấp nào</div>';
+    return;
+  }
+  let rows = list.map((n,i) => `<tr style="background:${i%2===0?'#fff':'#f8fafc'}">
+    <td style="padding:6px 8px;font-weight:700;color:#1e40af">${n.ma}</td>
+    <td style="padding:6px 8px;font-weight:600">${n.ten}</td>
+    <td style="padding:6px 8px;color:#64748b">${n.vietTat||'—'}</td>
+    <td style="padding:6px 8px;color:#7c3aed">${n.mst||'—'}</td>
+    <td style="padding:6px 8px">${n.sdt||'—'}</td>
+    <td style="padding:6px 8px;color:#0ea5e9;font-size:11px">${n.nguoiDD||'—'}</td>
+    <td style="padding:6px 8px;font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${n.diaChi||''}">${n.diaChi||'—'}</td>
+    <td style="padding:6px 8px;white-space:nowrap">
+      <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="suaNCC('${n.ma}')">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="xoaNCC('${n.ma}')">🗑️</button>
+    </td>
+  </tr>`).join("");
+  document.getElementById("nccTableWrap").innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#1e3a8a;color:#fff">
+        <th style="padding:7px 8px;text-align:left">Mã NCC</th>
+        <th style="padding:7px 8px;text-align:left">Tên nhà cung cấp</th>
+        <th style="padding:7px 8px;text-align:left">Viết tắt</th>
+        <th style="padding:7px 8px;text-align:left">MST</th>
+        <th style="padding:7px 8px;text-align:left">SĐT</th>
+        <th style="padding:7px 8px;text-align:left">Người ĐD</th>
+        <th style="padding:7px 8px;text-align:left">Địa chỉ</th>
+        <th style="padding:7px 8px"></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+};
+
+window.luuNCC = async function() {
+  const ten = document.getElementById("ncc_ten").value.trim();
+  if (!ten) { showToast("Nhập tên nhà cung cấp!","error"); return; }
+  const ma = _editNCCMa || document.getElementById("ncc_ma").value;
+  const data = {
+    ma, ten,
+    vietTat: document.getElementById("ncc_vietTat").value.trim(),
+    mst:     document.getElementById("ncc_mst").value.trim(),
+    sdt:     document.getElementById("ncc_sdt").value.trim(),
+    email:   document.getElementById("ncc_email").value.trim(),
+    nguoiDD: document.getElementById("ncc_nguoiDD").value.trim(),
+    tknh:    document.getElementById("ncc_tknh").value.trim(),
+    diaChi:  document.getElementById("ncc_diaChi").value.trim(),
+    updatedAt: serverTimestamp()
+  };
+  try {
+    await setDoc(doc(db,"nhaCungCap",ma), data);
+    showToast(_editNCCMa ? "Đã cập nhật NCC!" : "Đã thêm NCC "+ma+"!");
+    await loadNCC();
+    huyFormNCC();
+    renderNCCTable();
+  } catch(e) { showToast("Lỗi: "+e.message,"error"); }
+};
+
+window.suaNCC = function(ma) {
+  const n = allNCC.find(x=>x.ma===ma);
+  if (!n) return;
+  _editNCCMa = ma;
+  document.getElementById("ncc_ma").value = n.ma;
+  document.getElementById("ncc_ten").value = n.ten||"";
+  document.getElementById("ncc_vietTat").value = n.vietTat||"";
+  document.getElementById("ncc_mst").value = n.mst||"";
+  document.getElementById("ncc_sdt").value = n.sdt||"";
+  document.getElementById("ncc_email").value = n.email||"";
+  document.getElementById("ncc_nguoiDD").value = n.nguoiDD||"";
+  document.getElementById("ncc_tknh").value = n.tknh||"";
+  document.getElementById("ncc_diaChi").value = n.diaChi||"";
+  document.getElementById("formNCCTitle").textContent = "✏️ Chỉnh sửa: "+n.ten;
+  document.getElementById("btnLuuNCC").textContent = "💾 Cập nhật";
+  document.getElementById("btnHuyNCC").style.display = "";
+  document.getElementById("ncc_ten").focus();
+};
+
+window.huyFormNCC = function() {
+  _editNCCMa = null;
+  document.getElementById("ncc_ma").value = genMaNCC();
+  document.getElementById("ncc_ten").value = "";
+  document.getElementById("ncc_vietTat").value = "";
+  document.getElementById("ncc_mst").value = "";
+  document.getElementById("ncc_sdt").value = "";
+  document.getElementById("ncc_email").value = "";
+  document.getElementById("ncc_nguoiDD").value = "";
+  document.getElementById("ncc_tknh").value = "";
+  document.getElementById("ncc_diaChi").value = "";
+  document.getElementById("formNCCTitle").textContent = "➕ Thêm nhà cung cấp mới";
+  document.getElementById("btnLuuNCC").textContent = "💾 Thêm NCC";
+  document.getElementById("btnHuyNCC").style.display = "none";
+};
+
+window.xoaNCC = async function(ma) {
+  if (!confirm("Xoá nhà cung cấp "+ma+"?")) return;
+  try {
+    await deleteDoc(doc(db,"nhaCungCap",ma));
+    await loadNCC();
+    renderNCCTable();
+    showToast("Đã xoá NCC "+ma);
+  } catch(e) { showToast("Lỗi: "+e.message,"error"); }
+};
+
+
 function renderTabBC() {
   const hd = currentHD;
   const items = hd.hangHoa||[];
@@ -1288,7 +1817,7 @@ function renderTabBC() {
     document.getElementById("tc_bc").innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8">Chưa có danh mục hàng hóa</div>';
     return;
   }
-  // Thu thập bàn giao theo itemId và ngày
+  const coDC = items.some(function(it){return (it.tongDC||0)!==0;});
   const delivered = {};
   (hd.banGiao||[]).forEach(function(bg){
     (bg.items||[]).forEach(function(it){
@@ -1302,24 +1831,27 @@ function renderTabBC() {
   (hd.banGiao||[]).forEach(function(bg){ if(bg.ngay && !seenDates[bg.ngay]){seenDates[bg.ngay]=1;allDates.push(bg.ngay);} });
   allDates.sort();
 
-  // Header
-  let th = '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;text-align:center;border:1px solid #3b82f6">Mã</th>'
-    + '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;border:1px solid #3b82f6">Tên thuốc</th>'
-    + '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;border:1px solid #3b82f6">Hoạt chất</th>'
-    + '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;border:1px solid #3b82f6">Nồng độ</th>'
-    + '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;border:1px solid #3b82f6">Dạng BC</th>'
-    + '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;border:1px solid #3b82f6">Quy cách</th>'
-    + '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;border:1px solid #3b82f6">GĐKLH/GPNK</th>'
-    + '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;border:1px solid #3b82f6">Cơ sở SX</th>'
-    + '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;text-align:center;border:1px solid #3b82f6">Nước SX</th>'
-    + '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;text-align:center;border:1px solid #3b82f6">ĐVT</th>'
-    + '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;text-align:right;border:1px solid #3b82f6">SL HĐ</th>'
-    + '<th style="padding:6px 5px;background:#1e3a8a;color:#fff;text-align:right;border:1px solid #3b82f6">Đơn giá</th>';
+  const thBg = 'padding:6px 5px;background:#1e3a8a;color:#fff;border:1px solid #3b82f6';
+  const thDc = 'padding:6px 5px;background:#7c3aed;color:#fff;border:1px solid #7c3aed;text-align:right';
+  const thGr = 'padding:6px 5px;background:#065f46;color:#fff;border:1px solid #059669';
+  let th = '<th style="'+thBg+';text-align:center">Mã</th>'
+    + '<th style="'+thBg+'">Tên thuốc</th>'
+    + '<th style="'+thBg+'">Hoạt chất</th>'
+    + '<th style="'+thBg+'">Nồng độ</th>'
+    + '<th style="'+thBg+'">Dạng BC</th>'
+    + '<th style="'+thBg+'">Quy cách</th>'
+    + '<th style="'+thBg+'">GĐKLH/GPNK</th>'
+    + '<th style="'+thBg+'">Cơ sở SX</th>'
+    + '<th style="'+thBg+';text-align:center">Nước SX</th>'
+    + '<th style="'+thBg+';text-align:center">ĐVT</th>'
+    + '<th style="'+thBg+';text-align:right">SL HĐ</th>'
+    + (coDC ? '<th style="'+thDc+'">SL sau ĐC</th>' : '')
+    + '<th style="'+thBg+';text-align:right">Đơn giá</th>';
   allDates.forEach(function(d){
     th += '<th style="padding:6px 5px;background:#1e40af;color:#fff;text-align:center;border:1px solid #3b82f6;min-width:70px">Bàn giao<br>'+fmtNgay(d)+'</th>';
   });
-  th += '<th style="padding:6px 5px;background:#065f46;color:#fff;text-align:right;border:1px solid #059669">SL còn lại</th>'
-    + '<th style="padding:6px 5px;background:#065f46;color:#fff;text-align:center;border:1px solid #059669">Tỷ lệ<br>thực hiện</th>';
+  th += '<th style="'+thGr+';text-align:right">SL còn lại'+(coDC?'<br>(sau ĐC)':'')+'</th>'
+    + '<th style="'+thGr+';text-align:center">Tỷ lệ<br>thực hiện'+(coDC?'<br>(sau ĐC)':'')+'</th>';
 
   let tbody = '';
   items.forEach(function(it, i){
@@ -1328,8 +1860,10 @@ function renderTabBC() {
     allDates.forEach(function(d){byDate[d]=0;});
     dlvList.forEach(function(d){byDate[d.ngay]=(byDate[d.ngay]||0)+d.soLuong;});
     const tongDaBG = dlvList.reduce(function(s,d){return s+d.soLuong;},0);
-    const conLai = (it.soLuong||0) - tongDaBG;
-    const tyLe = it.soLuong>0 ? Math.round(tongDaBG/it.soLuong*100) : 0;
+    const slDC = (it.soLuong||0) + (it.tongDC||0);
+    const baseQty = coDC ? slDC : (it.soLuong||0);
+    const conLai = baseQty - tongDaBG;
+    const tyLe = baseQty > 0 ? Math.round(tongDaBG/baseQty*100) : 0;
     const bg = i%2===0?'#fff':'#f8fafc';
     const tyLeColor = tyLe>=100?'#22c55e':tyLe>=50?'#f59e0b':'#ef4444';
     const td = function(val, style){ return '<td style="padding:5px 6px;border:1px solid #e2e8f0;background:'+bg+';'+(style||'')+'">'+val+'</td>'; };
@@ -1344,6 +1878,7 @@ function renderTabBC() {
       + td(it.nuocSX||'—','text-align:center')
       + td(it.dvt,'text-align:center')
       + td(fmtSo(it.soLuong),'text-align:right;font-weight:600')
+      + (coDC ? '<td style="padding:5px 6px;border:1px solid #e2e8f0;background:#eff6ff;text-align:right;font-weight:700;color:#7c3aed">'+fmtSo(slDC)+'</td>' : '')
       + td(fmtSo(it.donGia),'text-align:right');
     allDates.forEach(function(d){
       const sl = byDate[d]||0;
@@ -1364,6 +1899,7 @@ function renderTabBC() {
 
   document.getElementById("tc_bc").innerHTML = html;
 }
+
 
 window.xuatBaoCaoExcel = function() {
   const hd = currentHD;
@@ -1415,6 +1951,278 @@ window.xuatBaoCaoExcel = function() {
   const tenFile = "BaoCao_"+hd.soHD.replace(/\//g,"-")+"_"+todayStr()+".xlsx";
   XLSX.writeFile(wb, tenFile);
   showToast("Đã xuất file "+tenFile);
+};
+
+// ── ĐIỀU CHỈNH SỐ LƯỢNG HĐ ──
+let _dcHHId = "", _dcDonGia = 0, _dcSoLuongHD = 0;
+
+window.moModalDCXem = async function(maHH) {
+  // Find the item in currentHD
+  const it = (currentHD.hangHoa||[]).find(x=>x.id===maHH);
+  if (!it) return;
+  _dcHHId = maHH;
+  _dcDonGia = it.donGia || 0;
+  _dcSoLuongHD = it.soLuong || 0;
+  document.getElementById("dcTitle").textContent = "🔄 Lịch sử điều chỉnh: " + it.ten;
+  document.getElementById("dcItemInfo").innerHTML =
+    `<b>Tên:</b> ${it.ten} &nbsp;|&nbsp; <b>SL HĐ gốc:</b> ${fmtSo(it.soLuong)} ${it.dvt} &nbsp;|&nbsp; <b>Tổng ĐC:</b> <span style="color:${(it.tongDC||0)>=0?'#22c55e':'#ef4444'};font-weight:700">${(it.tongDC||0)>=0?'+':''}${fmtSo(it.tongDC||0)}</span> &nbsp;|&nbsp; <b>SL sau ĐC:</b> <span style="color:#1e40af;font-weight:700">${fmtSo((it.soLuong||0)+(it.tongDC||0))} ${it.dvt}</span> &nbsp;|&nbsp; <b>Đơn giá:</b> ${fmtSo(it.donGia)} đ`;
+  // Ẩn form thêm mới, chỉ hiện lịch sử
+  const formThem = document.querySelector('#modalDieuChinh .modal-ct > div:nth-child(3)');
+  if (formThem) formThem.style.display = 'none';
+  await loadLichSuDC(maHH);
+  // Ẩn nút xóa trong lịch sử (chế độ xem)
+  document.getElementById("modalDieuChinh").classList.add("open");
+};
+
+window.moModalDC = async function(maHH, idx) {
+  // Restore form visibility
+  const formThem = document.querySelector('#modalDieuChinh .modal-ct > div:nth-child(3)');
+  if (formThem) formThem.style.display = '';
+  const it = hdItems[idx];
+  if (!it) return;
+  _dcHHId = maHH;
+  _dcDonGia = it.donGia || 0;
+  _dcSoLuongHD = it.soLuong || 0;
+  document.getElementById("dcTitle").textContent = "🔄 Điều chỉnh: " + it.ten;
+  document.getElementById("dcItemInfo").innerHTML =
+    `<b>Tên:</b> ${it.ten} &nbsp;|&nbsp; <b>SL HĐ gốc:</b> ${fmtSo(it.soLuong)} ${it.dvt} &nbsp;|&nbsp; <b>Tổng ĐC:</b> <span style="color:${(it.tongDC||0)>=0?'#22c55e':'#ef4444'};font-weight:700">${(it.tongDC||0)>=0?'+':''}${fmtSo(it.tongDC||0)}</span> &nbsp;|&nbsp; <b>SL sau ĐC:</b> <span style="color:#1e40af;font-weight:700">${fmtSo((it.soLuong||0)+(it.tongDC||0))} ${it.dvt}</span> &nbsp;|&nbsp; <b>Đơn giá:</b> ${fmtSo(it.donGia)} đ`;
+  document.getElementById("dc_soLuong").value = "";
+  document.getElementById("dc_ngay").value = todayStr();
+  document.getElementById("dc_congVan").value = "";
+  document.getElementById("dc_phuLuc").value = "";
+  document.getElementById("dc_ghiChu").value = "";
+  document.getElementById("dc_tien_preview").textContent = "0 đ";
+  await loadLichSuDC(maHH);
+  document.getElementById("modalDieuChinh").classList.add("open");
+};
+
+window.capNhatDCPreview = function() {
+  const sl = Number(document.getElementById("dc_soLuong").value)||0;
+  const loai = document.getElementById("dc_loai").value;
+  const tien = sl * _dcDonGia;
+  const el = document.getElementById("dc_tien_preview");
+  el.textContent = (loai==="giam"?"-":"+") + fmtSo(tien) + " đ";
+  el.style.color = loai==="giam" ? "#ef4444" : "#22c55e";
+};
+
+async function loadLichSuDC(maHH) {
+  try {
+    const snap = await getDocs(query(collection(db,"dieuChinh"), where("maHH","==",maHH)));
+    const list = [];
+    snap.forEach(d => list.push({id:d.id,...d.data()}));
+    list.sort((a,b)=>(a.ngay||"").localeCompare(b.ngay||""));
+    if (!list.length) {
+      document.getElementById("dcLichSu").innerHTML = '<div style="text-align:center;padding:16px;color:#94a3b8;font-size:12px">Chưa có lần điều chỉnh nào</div>';
+      return;
+    }
+    let tongDC = 0;
+    const rows = list.map((dc,i) => {
+      const delta = dc.loai==="giam" ? -(dc.soLuong||0) : (dc.soLuong||0);
+      tongDC += delta;
+      return `<tr style="background:${i%2===0?'#fff':'#f8fafc'}">
+        <td style="padding:5px 8px">${fmtNgay(dc.ngay)}</td>
+        <td style="padding:5px 8px;text-align:center">
+          <span style="background:${dc.loai==='giam'?'#fee2e2':'#f0fdf4'};color:${dc.loai==='giam'?'#ef4444':'#22c55e'};border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">
+            ${dc.loai==='giam'?'➖ Giảm':'➕ Tăng'}
+          </span>
+        </td>
+        <td style="padding:5px 8px;text-align:right;font-weight:700;color:${dc.loai==='giam'?'#ef4444':'#1e40af'}">${dc.loai==='giam'?'-':'+'}${fmtSo(dc.soLuong)}</td>
+        <td style="padding:5px 8px;text-align:right;color:#64748b">${fmtSo(Math.abs(delta)*_dcDonGia)} đ</td>
+        <td style="padding:5px 8px;color:#7c3aed;font-size:11px">${dc.congVan||'—'}</td>
+        <td style="padding:5px 8px;color:#0ea5e9;font-size:11px">${dc.phuLuc||'—'}</td>
+        <td style="padding:5px 8px;font-size:11px;color:#64748b">${dc.ghiChu||'—'}</td>
+        <td style="padding:5px 8px"><button class="btn btn-danger btn-sm" onclick="xoaDieuChinh('${dc.id}','${maHH}')">🗑️</button></td>
+      </tr>`;
+    }).join("");
+    document.getElementById("dcLichSu").innerHTML =
+      `<table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#f8fafc">
+          <th style="padding:6px 8px;text-align:left">Ngày</th>
+          <th style="padding:6px 8px;text-align:center">Loại</th>
+          <th style="padding:6px 8px;text-align:right">SL ĐC</th>
+          <th style="padding:6px 8px;text-align:right">Số tiền</th>
+          <th style="padding:6px 8px">Công văn</th>
+          <th style="padding:6px 8px">Phụ lục</th>
+          <th style="padding:6px 8px">Ghi chú</th>
+          <th style="padding:6px 8px"></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr style="background:#eff6ff;font-weight:700">
+          <td colspan="2" style="padding:6px 8px;text-align:right">Tổng ĐC / SL sau ĐC:</td>
+          <td style="padding:6px 8px;text-align:right;color:${tongDC>=0?'#22c55e':'#ef4444'}">${tongDC>=0?'+':''}${fmtSo(tongDC)} → <span style="color:#1e40af">${fmtSo(_dcSoLuongHD+tongDC)}</span></td>
+          <td style="padding:6px 8px;text-align:right;color:#1e40af">${fmtSo((_dcSoLuongHD+tongDC)*_dcDonGia)} đ</td>
+          <td colspan="4"></td>
+        </tr></tfoot>
+      </table>`;
+  } catch(e) { showToast("Lỗi tải điều chỉnh: "+e.message,"error"); }
+}
+
+window.luuDieuChinh = async function() {
+  const sl = Number(document.getElementById("dc_soLuong").value)||0;
+  if (!sl) { showToast("Nhập số lượng điều chỉnh!","error"); return; }
+  const loai = document.getElementById("dc_loai").value;
+  try {
+    await addDoc(collection(db,"dieuChinh"), {
+      maHH: _dcHHId, soHD: currentHD.soHD,
+      loai, soLuong: sl, ngay: document.getElementById("dc_ngay").value || todayStr(),
+      congVan: document.getElementById("dc_congVan").value.trim(),
+      phuLuc:  document.getElementById("dc_phuLuc").value.trim(),
+      ghiChu:  document.getElementById("dc_ghiChu").value.trim(),
+      createdAt: serverTimestamp()
+    });
+    // Cập nhật tongDC trên hangHoa document
+    const snap = await getDocs(query(collection(db,"dieuChinh"), where("maHH","==",_dcHHId)));
+    let tongDC = 0;
+    snap.forEach(d => { const dc=d.data(); tongDC += dc.loai==="giam"?-(dc.soLuong||0):(dc.soLuong||0); });
+    await updateDoc(doc(db,"hangHoa",_dcHHId), {tongDC});
+    // Cập nhật local
+    const it = hdItems.find(x=>x.id===_dcHHId);
+    if (it) it.tongDC = tongDC;
+    const hhInHD = (currentHD.hangHoa||[]).find(x=>x.id===_dcHHId);
+    if (hhInHD) hhInHD.tongDC = tongDC;
+    showToast("Đã lưu điều chỉnh!");
+    document.getElementById("dc_soLuong").value="";
+    document.getElementById("dc_ngay").value=todayStr();
+    document.getElementById("dc_congVan").value="";
+    document.getElementById("dc_phuLuc").value="";
+    document.getElementById("dc_ghiChu").value="";
+    document.getElementById("dc_tien_preview").textContent="0 đ";
+    await loadLichSuDC(_dcHHId);
+    renderHDItems();
+    renderAll();
+  } catch(e) { showToast("Lỗi: "+e.message,"error"); }
+};
+
+window.xoaDieuChinh = async function(dcId, maHH) {
+  if (!confirm("Xoá lần điều chỉnh này?")) return;
+  try {
+    await deleteDoc(doc(db,"dieuChinh",dcId));
+    const snap = await getDocs(query(collection(db,"dieuChinh"), where("maHH","==",maHH)));
+    let tongDC = 0;
+    snap.forEach(d => { const dc=d.data(); tongDC += dc.loai==="giam"?-(dc.soLuong||0):(dc.soLuong||0); });
+    await updateDoc(doc(db,"hangHoa",maHH), {tongDC});
+    const it = hdItems.find(x=>x.id===maHH);
+    if (it) it.tongDC = tongDC;
+    const hhInHD = (currentHD.hangHoa||[]).find(x=>x.id===maHH);
+    if (hhInHD) hhInHD.tongDC = tongDC;
+    await loadLichSuDC(maHH);
+    renderHDItems(); renderAll();
+    showToast("Đã xoá điều chỉnh!");
+  } catch(e) { showToast("Lỗi: "+e.message,"error"); }
+};
+
+window.dongModalDC = function() {
+  document.getElementById("modalDieuChinh").classList.remove("open");
+  // Restore form visibility for next open
+  const formThem = document.querySelector('#modalDieuChinh .modal-ct > div:nth-child(3)');
+  if (formThem) formThem.style.display = '';
+};
+
+window.xemLichSuDCHD = async function() {
+  const hd = currentHD;
+  const tvGoc = calcTotal(hd.hangHoa||[]);
+  // Load tất cả điều chỉnh của HĐ này
+  try {
+    const snap = await getDocs(query(collection(db,"dieuChinh"), where("soHD","==",hd.soHD)));
+    const allDC = [];
+    snap.forEach(d => allDC.push({id:d.id,...d.data()}));
+    allDC.sort((a,b)=>(a.ngay||"").localeCompare(b.ngay||""));
+
+    if (!allDC.length) {
+      document.getElementById("lichSuDCHDContent").innerHTML =
+        '<div style="text-align:center;padding:24px;color:#94a3b8">Chưa có điều chỉnh nào</div>';
+      document.getElementById("modalLichSuDCHD").classList.add("open");
+      return;
+    }
+
+    // Nhóm theo ngày điều chỉnh
+    const byDate = {};
+    allDC.forEach(dc => {
+      if (!byDate[dc.ngay]) byDate[dc.ngay] = [];
+      byDate[dc.ngay].push(dc);
+    });
+
+    // Tính giá trị HĐ theo từng mặt hàng ban đầu
+    const hhMap = {};
+    (hd.hangHoa||[]).forEach(it => { hhMap[it.id] = it; });
+
+    // Build timeline
+    let html = `<div style="background:#f0f9ff;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px">
+      <b>HĐ:</b> ${escHtml(hd.soHD)} &nbsp;|&nbsp; <b>Nhà CC:</b> ${escHtml(hd.nhaCungCap)}
+      &nbsp;|&nbsp; <b>GT HĐ gốc:</b> <span style="color:#8b5cf6;font-weight:700">${fmtSo(tvGoc)} đ</span>
+    </div>`;
+
+    // Tính lũy kế theo ngày
+    const tongDCByItem = {};
+    (hd.hangHoa||[]).forEach(it => { tongDCByItem[it.id] = 0; });
+
+    let luyCe = tvGoc;
+    const dates = Object.keys(byDate).sort();
+
+    html += '<div style="position:relative;padding-left:20px">';
+    dates.forEach((ngay, dateIdx) => {
+      const dcsOfDay = byDate[ngay];
+      // Tính delta của ngày này
+      let deltaGT = 0;
+      const itemRows = dcsOfDay.map(dc => {
+        const it = hhMap[dc.maHH];
+        if (!it) return '';
+        const delta = dc.loai==="giam" ? -(dc.soLuong||0) : (dc.soLuong||0);
+        tongDCByItem[dc.maHH] = (tongDCByItem[dc.maHH]||0) + delta;
+        const dtGT = delta * (it.donGia||0);
+        deltaGT += dtGT;
+        return `<tr style="background:${dateIdx%2===0?'#fff':'#f8fafc'}">
+          <td style="padding:4px 8px;color:#7c3aed">${it.maThuoc||'—'}</td>
+          <td style="padding:4px 8px;font-weight:600">${it.ten}</td>
+          <td style="padding:4px 8px;text-align:center">${it.dvt}</td>
+          <td style="padding:4px 8px;text-align:right;color:${dc.loai==='giam'?'#ef4444':'#22c55e'};font-weight:700">${dc.loai==='giam'?'➖':'+'}${fmtSo(dc.soLuong)}</td>
+          <td style="padding:4px 8px;text-align:right;color:${dtGT>=0?'#22c55e':'#ef4444'};font-weight:700">${dtGT>=0?'+':''}${fmtSo(dtGT)} đ</td>
+          <td style="padding:4px 8px;font-size:11px;color:#7c3aed">${dc.congVan||'—'}</td>
+          <td style="padding:4px 8px;font-size:11px;color:#0ea5e9">${dc.phuLuc||'—'}</td>
+        </tr>`;
+      }).join('');
+
+      luyCe += deltaGT;
+      html += `
+        <div style="margin-bottom:16px;border-left:3px solid ${deltaGT>=0?'#22c55e':'#ef4444'};padding-left:14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+            <span style="background:#1e3a8a;color:#fff;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700">📅 ${fmtNgay(ngay)}</span>
+            <span style="background:${deltaGT>=0?'#f0fdf4':'#fee2e2'};color:${deltaGT>=0?'#166534':'#dc2626'};border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700">
+              ${deltaGT>=0?'➕':'➖'} ${fmtSo(Math.abs(deltaGT))} đ
+            </span>
+            <span style="background:#eff6ff;color:#1e40af;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700">
+              GT sau ĐC: ${fmtSo(luyCe)} đ
+            </span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:#f8fafc">
+              <th style="padding:4px 8px;text-align:left">Mã</th>
+              <th style="padding:4px 8px;text-align:left">Tên thuốc</th>
+              <th style="padding:4px 8px;text-align:center">ĐVT</th>
+              <th style="padding:4px 8px;text-align:right">SL ĐC</th>
+              <th style="padding:4px 8px;text-align:right">Tiền ĐC</th>
+              <th style="padding:4px 8px">Công văn</th>
+              <th style="padding:4px 8px">Phụ lục</th>
+            </tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+        </div>`;
+    });
+
+    html += '</div>';
+    // Tổng kết
+    const tvDC = calcTotal(hd.hangHoa||[]) + Object.keys(tongDCByItem).reduce((s,id)=>{
+      const it = hhMap[id]; return s + (tongDCByItem[id]||0)*(it?it.donGia:0);
+    }, 0);
+    html += `<div style="background:#eff6ff;border-radius:10px;padding:12px 16px;display:flex;gap:20px;flex-wrap:wrap;font-size:13px">
+      <span>💰 <b>GT HĐ gốc:</b> <span style="color:#8b5cf6;font-weight:700">${fmtSo(tvGoc)} đ</span></span>
+      <span>🔄 <b>Tổng ĐC:</b> <span style="color:${tvDC-tvGoc>=0?'#22c55e':'#ef4444'};font-weight:700">${tvDC-tvGoc>=0?'+':''}${fmtSo(tvDC-tvGoc)} đ</span></span>
+      <span>✅ <b>GT HĐ sau ĐC:</b> <span style="color:#1e40af;font-weight:800;font-size:14px">${fmtSo(tvDC)} đ</span></span>
+    </div>`;
+
+    document.getElementById("lichSuDCHDContent").innerHTML = html;
+    document.getElementById("modalLichSuDCHD").classList.add("open");
+  } catch(e) { showToast("Lỗi: "+e.message,"error"); }
 };
 
 window.suaThongTinNhaThau = function() {
@@ -1616,16 +2424,38 @@ function renderTabBG() {
 function renderTabCon() {
   const hd = currentHD, delivered = {};
   (hd.banGiao||[]).forEach(bg => (bg.items||[]).forEach(it => { if(it.itemId) delivered[it.itemId]=(delivered[it.itemId]||0)+it.soLuong; }));
-  const items = (hd.hangHoa||[]).map(it => ({ ...it, deliveredQty:delivered[it.id]||0, remainQty:(it.soLuong||0)-(delivered[it.id]||0) }));
+  const items = (hd.hangHoa||[]).map(it => {
+    const slDC = (it.soLuong||0) + (it.tongDC||0);
+    const dq = delivered[it.id]||0;
+    return { ...it, deliveredQty:dq, slDC, remainQty:slDC-dq };
+  });
+  const coDC = items.some(i=>(i.tongDC||0)!==0);
   const overC=items.filter(i=>i.remainQty<0).length, doneC=items.filter(i=>i.remainQty===0).length, leftC=items.filter(i=>i.remainQty>0).length;
   let html = '<div style="font-weight:800;font-size:13px;margin-bottom:10px;color:#374151">Hàng hóa còn lại trong hợp đồng</div>';
   if (items.length) {
-    html += '<div class="table-wrap"><table><thead><tr><th>#</th><th>Tên hàng hóa</th><th>ĐVT</th><th style="text-align:right">SL HĐ</th><th style="text-align:right">Đã BG</th><th style="text-align:right">Còn lại</th><th style="text-align:right">Đơn giá</th><th style="text-align:right">Thành tiền</th></tr></thead><tbody>';
+    html += `<div class="table-wrap"><table><thead><tr>
+      <th>#</th><th>Tên hàng hóa</th><th>ĐVT</th>
+      <th style="text-align:right">SL HĐ</th>
+      ${coDC?'<th style="text-align:right;background:#eff6ff;color:#1e40af">SL sau ĐC</th>':''}
+      <th style="text-align:right">Đã BG</th>
+      <th style="text-align:right">Còn lại${coDC?' (sau ĐC)':''}</th>
+      <th style="text-align:right">Đơn giá</th>
+      <th style="text-align:right">Thành tiền</th>
+    </tr></thead><tbody>`;
     items.forEach((it,i) => {
       const bg=it.remainQty<0?"#fee2e2":it.remainQty===0?"#f0fdf4":"#fff";
       const rc=it.remainQty<0?"#ef4444":it.remainQty===0?"#22c55e":"#374151";
       const rt=it.remainQty<0?`<b style="color:#ef4444">⚠️ Vượt ${fmtSo(Math.abs(it.remainQty))}</b>`:it.remainQty===0?'<span style="color:#22c55e">✓ Đã đủ</span>':fmtSo(it.remainQty);
-      html += `<tr style="background:${bg}"><td style="color:#94a3b8">${i+1}</td><td>${it.ten}</td><td>${it.dvt}</td><td style="text-align:right">${fmtSo(it.soLuong)}</td><td style="text-align:right;color:#3b82f6;font-weight:600">${fmtSo(it.deliveredQty)}</td><td style="text-align:right;font-weight:700;color:${rc}">${rt}</td><td style="text-align:right">${fmtSo(it.donGia)}</td><td style="text-align:right;font-weight:600">${fmtSo((it.soLuong||0)*(it.donGia||0))}</td></tr>`;
+      html += `<tr style="background:${bg}">
+        <td style="color:#94a3b8">${i+1}</td>
+        <td>${it.ten}</td><td>${it.dvt}</td>
+        <td style="text-align:right">${fmtSo(it.soLuong)}</td>
+        ${coDC?`<td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700">${fmtSo(it.slDC)}</td>`:''}
+        <td style="text-align:right;color:#3b82f6;font-weight:600">${fmtSo(it.deliveredQty)}</td>
+        <td style="text-align:right;font-weight:700;color:${rc}">${rt}</td>
+        <td style="text-align:right">${fmtSo(it.donGia)}</td>
+        <td style="text-align:right;font-weight:600">${fmtSo((it.slDC||0)*(it.donGia||0))}</td>
+      </tr>`;
     });
     html += `</tbody></table></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
       <div style="background:#f0fdf4;border-radius:8px;padding:7px 12px;font-size:12px">✅ Đã đủ: <b style="color:#22c55e">${doneC}</b></div>
@@ -1637,10 +2467,41 @@ function renderTabCon() {
 }
 
 // ── FORM HỢP ĐỒNG ──
+window.filterNCCSuggest = function(val) {
+  if (!val || !allNCC.length) { hideNCCSuggest(); return; }
+  const q = val.toLowerCase();
+  const hits = allNCC.filter(n =>
+    (n.ten||"").toLowerCase().includes(q) ||
+    (n.ma||"").toLowerCase().includes(q) ||
+    (n.vietTat||"").toLowerCase().includes(q)
+  ).slice(0,8);
+  if (!hits.length) { hideNCCSuggest(); return; }
+  const el = document.getElementById("ncc_suggest");
+  el.innerHTML = hits.map(n =>
+    `<div onclick="chonNCC('${n.ma.replace(/'/g,"\\'")}','${n.ten.replace(/'/g,"\\'")}');return false"
+      style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9"
+      onmouseenter="this.style.background='#eff6ff'" onmouseleave="this.style.background=''">
+      <span style="color:#1e40af;font-weight:700">${n.ma}</span>
+      <span style="margin-left:6px">${n.ten}</span>
+      ${n.vietTat?'<span style="color:#94a3b8;margin-left:4px;font-size:10px">('+n.vietTat+')</span>':''}
+    </div>`
+  ).join("");
+  el.style.display = "block";
+};
+window.chonNCC = function(ma, ten) {
+  document.getElementById("f_ncc").value = ten;
+  document.getElementById("f_maNCC").value = ma;
+  hideNCCSuggest();
+};
+window.hideNCCSuggest = function() {
+  const el = document.getElementById("ncc_suggest");
+  if (el) el.style.display = "none";
+};
+
 window.moFormThem = function() {
   editMode=false; editSoHD=""; hdItems=[];
   document.getElementById("modalHDTitle").textContent="➕ Thêm hợp đồng mới";
-  ["f_soHD","f_ten","f_ncc","f_qdtt","f_ngayKy","f_ngayHH","f_ngayTT","f_soNgayTT","f_ghiChuNhaThau","f_ghiChuChuDauTu","f_thongTinNhaThau"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  ["f_soHD","f_ten","f_ncc","f_maNCC","f_qdtt","f_ngayKy","f_ngayHH","f_ngayTT","f_soNgayTT","f_ghiChuNhaThau","f_ghiChuChuDauTu","f_thongTinNhaThau"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("f_soHD").disabled=false;
   document.getElementById("f_soHD").style.background="";
   document.getElementById("f_soHD").title="";
@@ -1652,11 +2513,13 @@ window.moFormSua = function(soHD) {
     id:it.id, maThuoc:it.maThuoc||"", ten:it.ten, hoatChat:it.hoatChat||"",
     nongDo:it.nongDo||"", dangBaoShe:it.dangBaoShe||"", quyCach:it.quyCach||"",
     hanDung:it.hanDung||"", sdk:it.sdk||"", coSoSX:it.coSoSX||"",
-    nuocSX:it.nuocSX||"", dvt:it.dvt, soLuong:it.soLuong, donGia:it.donGia
+    nuocSX:it.nuocSX||"", dvt:it.dvt, soLuong:it.soLuong, donGia:it.donGia,
+    tongDC:it.tongDC||0
   }));
   document.getElementById("modalHDTitle").textContent="✏️ Chỉnh sửa hợp đồng";
   document.getElementById("f_soHD").value=hd.soHD; document.getElementById("f_soHD").disabled=false; document.getElementById("f_soHD").style.background="#fffbeb"; document.getElementById("f_soHD").title="⚠️ Thay đổi số HĐ sẽ tạo document mới trên Firestore";
   document.getElementById("f_ten").value=hd.ten||""; document.getElementById("f_ncc").value=hd.nhaCungCap||"";
+  document.getElementById("f_maNCC").value=hd.maNCC||"";
   document.getElementById("f_qdtt").value=hd.soQDTrungThau||""; document.getElementById("f_ngayKy").value=hd.ngayKy||"";
   document.getElementById("f_ngayHH").value=hd.ngayHetHan||""; document.getElementById("f_ngayTT").value=hd.ngayTrungThau||"";
   document.getElementById("f_soNgayTT").value=hd.soNgayThanhToan||"";
@@ -1697,9 +2560,11 @@ function renderHDItems() {
     <th style="width:7%;word-break:break-word">Cơ sở SX</th>
     <th style="width:4%">Nước SX</th>
     <th style="width:3%">ĐVT</th>
-    <th style="width:4%;text-align:right">SL</th>
-    <th style="width:5%;text-align:right">Đơn giá</th>
-    <th style="width:6%;text-align:right">Thành tiền</th>
+    <th style="text-align:right;white-space:nowrap">SL HĐ</th>
+    <th style="text-align:right;white-space:nowrap">Đơn giá</th>
+    <th style="text-align:right;white-space:nowrap">Thành tiền</th>
+    <th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap" title="Số lượng điều chỉnh">SL ĐC</th>
+    <th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap">TT sau ĐC</th>
     <th class="col-sua" style="width:36px">Sửa</th>
   </tr></thead><tbody>
     ${hdItems.map((it,i)=>`<tr>
@@ -1716,13 +2581,19 @@ function renderHDItems() {
       <td style="text-align:right">${fmtSo(it.soLuong)}</td>
       <td style="text-align:right">${fmtSo(it.donGia)}</td>
       <td style="text-align:right;font-weight:600;color:#22c55e">${fmtSo((it.soLuong||0)*(it.donGia||0))}</td>
+      <td style="text-align:right;background:#eff6ff">
+        <button class="btn btn-sm" style="background:${(it.tongDC||0)!==0?'#eff6ff':'#f8fafc'};color:${(it.tongDC||0)!==0?'#1e40af':'#94a3b8'};border:1px solid ${(it.tongDC||0)!==0?'#bfdbfe':'#e2e8f0'};padding:2px 6px;font-size:11px;font-weight:${(it.tongDC||0)!==0?'700':'400'}" onclick="moModalDC('${it.id}',${i})" title="${(it.tongDC||0)!==0?'SL sau ĐC: '+(it.soLuong||0)+(it.tongDC||0):'Thêm điều chỉnh'}">${fmtSo((it.soLuong||0)+(it.tongDC||0))}</button>
+      </td>
+      <td style="text-align:right;font-weight:700;background:#eff6ff;color:${((it.soLuong||0)+(it.tongDC||0))>0?'#1e40af':'#ef4444'};white-space:nowrap">${fmtSo(((it.soLuong||0)+(it.tongDC||0))*(it.donGia||0))}</td>
       <td class="col-sua"><button class="btn btn-danger btn-sm" onclick="xoaHangHoaHDForm(${i})">🗑️</button></td>
     </tr>`).join("")}
     <tr class="tong-row">
       <td class="sticky sticky-1"></td><td class="sticky sticky-2"></td>
       <td class="sticky sticky-3"></td><td class="sticky sticky-4"></td>
       <td colspan="10" style="text-align:right">Tổng:</td>
-      <td style="text-align:right;color:#22c55e">${fmtSo(total)} đ</td><td></td>
+      <td style="text-align:right;color:#22c55e;white-space:nowrap">${fmtSo(total)} đ</td>
+      <td style="text-align:right;color:#1e40af;background:#eff6ff;white-space:nowrap">${fmtSo(hdItems.reduce((s,it)=>s+((it.soLuong||0)+(it.tongDC||0))*(it.donGia||0),0))} đ</td>
+      <td class="col-sua"></td>
     </tr>
   </tbody></table></div>`;
 }
@@ -1730,7 +2601,7 @@ window.luuHopDong = async function() {
   const soHD=v("f_soHD"),ten=v("f_ten"),ngayHH=v("f_ngayHH");
   if(!soHD||!ten||!ngayHH){showToast("Điền đủ thông tin bắt buộc!","error");return;}
   setBtnLoading("btnSaveHD",true,"💾 Lưu hợp đồng");
-  const hdData={ten,nhaCungCap:v("f_ncc"),soQDTrungThau:v("f_qdtt"),ngayTrungThau:v("f_ngayTT"),ngayKy:v("f_ngayKy"),ngayHetHan:ngayHH,daThanhLy:editMode?(allHD.find(h=>h.soHD===editSoHD)?.daThanhLy||false):false,ngayThanhLy:"",soNgayThanhToan:Number(v("f_soNgayTT"))||0,ghiChuNhaThau:v("f_ghiChuNhaThau"),ghiChuChuDauTu:v("f_ghiChuChuDauTu"),thongTinNhaThau:v("f_thongTinNhaThau"),updatedAt:serverTimestamp()};
+  const hdData={ten,nhaCungCap:v("f_ncc"),maNCC:v("f_maNCC"),soQDTrungThau:v("f_qdtt"),ngayTrungThau:v("f_ngayTT"),ngayKy:v("f_ngayKy"),ngayHetHan:ngayHH,daThanhLy:editMode?(allHD.find(h=>h.soHD===editSoHD)?.daThanhLy||false):false,ngayThanhLy:"",soNgayThanhToan:Number(v("f_soNgayTT"))||0,ghiChuNhaThau:v("f_ghiChuNhaThau"),ghiChuChuDauTu:v("f_ghiChuChuDauTu"),thongTinNhaThau:v("f_thongTinNhaThau"),updatedAt:serverTimestamp()};
   try {
     const batch = writeBatch(db);
     const soHDChanged = editMode && soHD !== editSoHD;
@@ -1756,7 +2627,7 @@ window.luuHopDong = async function() {
     // Lưu HH mới
     hdItems.forEach(it => {
       const maHH = it.id || ("HH_"+Date.now()+"_"+Math.random().toString(36).slice(2,5));
-      batch.set(doc(db,"hangHoa",maHH), {soHD,maHH,ten:it.ten,dvt:it.dvt,soLuong:it.soLuong,donGia:it.donGia,maThuoc:it.maThuoc||"",hoatChat:it.hoatChat||"",nongDo:it.nongDo||"",dangBaoShe:it.dangBaoShe||"",quyCach:it.quyCach||"",hanDung:it.hanDung||"",sdk:it.sdk||"",coSoSX:it.coSoSX||"",nuocSX:it.nuocSX||""});
+      batch.set(doc(db,"hangHoa",maHH), {soHD,maHH,ten:it.ten,dvt:it.dvt,soLuong:it.soLuong,donGia:it.donGia,maThuoc:it.maThuoc||"",hoatChat:it.hoatChat||"",nongDo:it.nongDo||"",dangBaoShe:it.dangBaoShe||"",quyCach:it.quyCach||"",hanDung:it.hanDung||"",sdk:it.sdk||"",coSoSX:it.coSoSX||"",nuocSX:it.nuocSX||"",tongDC:it.tongDC||0,ghiChu:it.ghiChu||""});
     });
     await batch.commit();
     showToast(editMode?"Cập nhật thành công!":"Thêm hợp đồng thành công!");
@@ -1919,15 +2790,23 @@ function kiemTraVuotRealtime(){
     (bg.items||[]).forEach(it=>{if(it.itemId)delivered[it.itemId]=(delivered[it.itemId]||0)+it.soLuong;});
   });
   const contractMap={};(hd.hangHoa||[]).forEach(ci=>contractMap[ci.id]=ci);
+  // Debug: log tongDC values
+  console.log("contractMap tongDC:", Object.values(contractMap).map(ci=>({ten:ci.ten,sl:ci.soLuong,tongDC:ci.tongDC})));
   const vuotList=[];
   bgItems.forEach(it=>{
     if(!it.itemId||!contractMap[it.itemId])return;
-    const hdI=contractMap[it.itemId],hdQty=hdI.soLuong||0,prev=delivered[it.itemId]||0,thisQty=it.soLuong||0;
-    if(prev+thisQty>hdQty)vuotList.push({ten:it.ten,dvt:it.dvt,hdQty,prev,thisQty,over:prev+thisQty-hdQty});
+    const hdI=contractMap[it.itemId];
+    // Dùng SL sau điều chỉnh nếu có
+    const slDC = (hdI.soLuong||0) + (hdI.tongDC||0);
+    const hdQty = slDC > 0 ? slDC : (hdI.soLuong||0);
+    const coDC = (hdI.tongDC||0) !== 0;
+    const prev=delivered[it.itemId]||0,thisQty=it.soLuong||0;
+    if(prev+thisQty>hdQty)vuotList.push({ten:it.ten,dvt:it.dvt,hdQty,prev,thisQty,over:prev+thisQty-hdQty,coDC});
   });
   const warnEl=document.getElementById("bg_warnVuot");
   if(vuotList.length){
-    warnEl.innerHTML='<div class="warn-box"><div class="warn-box-title">⚠️ Cảnh báo: Vượt số lượng HĐ!</div>'+vuotList.map(vv=>`<div style="font-size:11px;color:#92400e;margin-bottom:2px">• <b>${vv.ten}</b>: HĐ <b>${fmtSo(vv.hdQty)}</b> · Đã BG <b>${fmtSo(vv.prev)}</b> · Đợt này <b>${fmtSo(vv.thisQty)}</b> → <span style="color:#ef4444;font-weight:800">Vượt ${fmtSo(vv.over)} ${vv.dvt}</span></div>`).join("")+'</div>';
+    warnEl.innerHTML='<div class="warn-box"><div class="warn-box-title">⚠️ Cảnh báo: Vượt số lượng HĐ!</div>'
+      +vuotList.map(vv=>`<div style="font-size:11px;color:#92400e;margin-bottom:2px">• <b>${vv.ten}</b>: HĐ${vv.coDC?' sau ĐC':''} <b>${fmtSo(vv.hdQty)}</b> · Đã BG <b>${fmtSo(vv.prev)}</b> · Đợt này <b>${fmtSo(vv.thisQty)}</b> → <span style="color:#ef4444;font-weight:800">Vượt ${fmtSo(vv.over)} ${vv.dvt}</span></div>`).join('')+'</div>';
   } else { warnEl.innerHTML=""; }
   return vuotList;
 }
@@ -1949,7 +2828,7 @@ function renderBGItems(){
     <th style="width:4%">Nước SX</th>
     <th style="width:3%">ĐVT</th>
     <th style="width:4%;text-align:right">SL BG</th>
-    <th style="width:5%;text-align:right">Đơn giá</th>
+    <th style="text-align:right;white-space:nowrap">Đơn giá</th>
     <th style="width:6%;text-align:right">Thành tiền</th>
     <th class="col-sua" style="width:36px">Sửa</th>
   </tr></thead><tbody>
@@ -2478,9 +3357,10 @@ function renderItemsTable(items, mode, showNote, canEdit, ctx){
     <th style="width:7%;word-break:break-word">Cơ sở SX</th>
     <th style="width:4%">Nước SX</th>
     <th style="width:3%">ĐVT</th>
-    <th style="width:4%;text-align:right">${isBG?"SL BG":"SL"}</th>
-    <th style="width:5%;text-align:right">Đơn giá</th>
+    <th style="width:4%;text-align:right">${isBG?"SL BG":"SL HĐ"}</th>
+    <th style="text-align:right;white-space:nowrap">Đơn giá</th>
     <th style="width:6%;text-align:right">Thành tiền</th>
+    ${!isBG?'<th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap">SL ĐC</th><th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap">TT sau ĐC</th>':''}
     ${noteCol}${editCol}
   </tr></thead><tbody>
     ${items.map((it,i)=>`<tr>
@@ -2499,6 +3379,7 @@ function renderItemsTable(items, mode, showNote, canEdit, ctx){
       <td style="text-align:right;font-weight:600">${fmtSo(it.soLuong)}</td>
       <td style="text-align:right">${fmtSo(it.donGia)}</td>
       <td style="text-align:right;font-weight:700;color:#22c55e">${fmtSo((Number(it.soLuong)||0)*(Number(it.donGia)||0))}</td>
+      ${!isBG?('<td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+(it.tongDC?'<button onclick="moModalDCXem(\''+it.id+'\')" style="background:none;border:none;color:#1e40af;font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;padding:0;font-size:inherit" title="Xem lịch sử điều chỉnh">'+fmtSo((Number(it.soLuong)||0)+(Number(it.tongDC)||0))+'</button>':fmtSo((Number(it.soLuong)||0)+(Number(it.tongDC)||0)))+'</td><td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+fmtSo(((Number(it.soLuong)||0)+(Number(it.tongDC)||0))*(Number(it.donGia)||0))+'</td>'):''}
       ${showNote?`<td><div contenteditable="${canEdit?'true':'false'}" data-hhid="${it.id||''}" onblur="luuGhiChuItem(this,'${ctx||'hd'}')" style="width:100px;max-width:100px;min-height:20px;padding:4px 5px;border-radius:6px;border:1px solid ${it.ghiChu?'#fde047':'#e2e8f0'};background:${it.ghiChu?'#fefce8':'#fff'};color:#92400e;font-size:11px;outline:none;cursor:${canEdit?'text':'default'}" title="${canEdit?'Click để nhập ghi chú':''}">${it.ghiChu||''}</div></td>`:""}
       ${canEdit?`<td class="col-sua"><button class="btn btn-edit-bg btn-sm" onclick="moSuaHH('${it.id||""}')" title="Chỉnh sửa">✏️</button></td>`:""}
     </tr>`).join("")}
@@ -2508,7 +3389,8 @@ function renderItemsTable(items, mode, showNote, canEdit, ctx){
       <td class="sticky sticky-3"></td>
       <td class="sticky sticky-4"></td>
       <td colspan="10" style="text-align:right">Tổng:</td>
-      <td style="text-align:right;color:#22c55e">${fmtSo(total)} đ</td>
+      <td style="text-align:right;color:#22c55e;white-space:nowrap">${fmtSo(total)} đ</td>
+      ${!isBG?('<td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+fmtSo(items.reduce((s,it)=>s+(Number(it.soLuong)||0)+(Number(it.tongDC)||0),0))+'</td><td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+fmtSo(items.reduce((s,it)=>s+((Number(it.soLuong)||0)+(Number(it.tongDC)||0))*(Number(it.donGia)||0),0))+' đ</td>'):''}
       ${showNote?"<td></td>":""}
       ${canEdit?"<td></td>":""}
     </tr>
