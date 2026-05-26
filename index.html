@@ -218,6 +218,7 @@ th{position:relative;}
       <span id="userEmailDisplay" style="color:#bfdbfe;font-size:11px;padding:5px 10px;background:#ffffff18;border-radius:7px"></span>
       <button class="btn btn-outline" style="background:transparent;color:#fff;border-color:#93c5fd" onclick="xuatCSV()">📥 Xuất CSV</button>
       <button class="btn btn-outline" style="background:#fef3c7;color:#92400e;border-color:#fde68a" onclick="moModalCongNo()">📊 Công nợ NCC</button>
+      <button class="btn btn-outline" style="background:#f0fdf4;color:#166534;border-color:#86efac" onclick="moModalBCHH()">📋 Báo cáo HH</button>
       <label class="btn btn-outline" style="background:transparent;color:#86efac;border-color:#86efac;cursor:pointer;font-size:12px" title="Import dữ liệu từ file JSON xuất từ Apps Script cũ">📤 Import dữ liệu cũ<input type="file" id="importJSONFile" accept=".json" style="display:none" onchange="importJSONMigration(this)"></label>
       <button class="btn" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="moModalNCC()">🏢 Danh mục NCC</button>
       <button class="btn" style="background:#fff;color:#1e3a8a" onclick="moFormThem()">+ Thêm hợp đồng</button>
@@ -553,6 +554,44 @@ th{position:relative;}
       <button class="btn btn-outline btn-sm" onclick="dongModalCTHH()">✕</button>
     </div>
     <div id="chiTietHHContent"></div>
+  </div>
+</div>
+
+<!-- MODAL: BÁO CÁO HÀNG HÓA TỔNG HỢP -->
+<div class="modal-overlay" id="modalBCHH">
+  <div class="modal" style="max-width:100vw;width:100vw;max-height:100vh;height:100vh;overflow-y:auto;padding:12px 8px;border-radius:0;margin:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <span class="modal-title">📋 Báo cáo hàng hóa tổng hợp</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-success btn-sm" onclick="xuatBCHHExcel()">📊 Xuất Excel</button>
+        <button class="btn btn-outline btn-sm" onclick="dongModal('modalBCHH')">✕ Đóng</button>
+      </div>
+    </div>
+    <!-- Bộ lọc nhanh -->
+    <div style="background:#f8fafc;border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:2;min-width:200px">
+        <div style="font-size:10px;color:#64748b;margin-bottom:3px">🔍 Tìm nhanh (tên, mã, hoạt chất, NCC, số HĐ...)</div>
+        <input id="bchh_q" placeholder="Nhập từ khóa..." style="width:100%;font-size:12px" oninput="renderBCHH()">
+      </div>
+      <div style="min-width:140px">
+        <div style="font-size:10px;color:#64748b;margin-bottom:3px">Nhà cung cấp</div>
+        <select id="bchh_ncc" style="width:100%;font-size:12px" onchange="renderBCHH()"><option value="">Tất cả NCC</option></select>
+      </div>
+      <div style="min-width:120px">
+        <div style="font-size:10px;color:#64748b;margin-bottom:3px">Trạng thái thực hiện</div>
+        <select id="bchh_tt" style="width:100%;font-size:12px" onchange="renderBCHH()">
+          <option value="">Tất cả</option>
+          <option value="done">Đã đủ (100%)</option>
+          <option value="partial">Đang thực hiện</option>
+          <option value="none">Chưa bàn giao</option>
+          <option value="over">Vượt SL</option>
+        </select>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('bchh_q').value='';document.getElementById('bchh_ncc').value='';document.getElementById('bchh_tt').value='';renderBCHH()">🔄 Xóa lọc</button>
+      <div id="bchh_count" style="font-size:11px;color:#64748b;align-self:center"></div>
+    </div>
+    <!-- Bảng -->
+    <div id="bchh_wrap" style="overflow-x:auto"></div>
   </div>
 </div>
 
@@ -1335,7 +1374,7 @@ function renderTable() {
     return `<tr onclick="moChiTiet('${hd.soHD}')" style="cursor:pointer">
       <td style="font-weight:700;color:#1e40af;white-space:nowrap">${hd.soHD}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${hd.ten}">${hd.ten}</td>
-      <td style="color:#64748b;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${hd.nhaCungCap}${hd.maNCC?'<br><span style="font-size:10px;color:#94a3b8">['+hd.maNCC+']</span>':''}</td>
+      <td style="color:#64748b;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${hd.nhaCungCap}${hd.maNCC?' ['+hd.maNCC+']':''}">${hd.nhaCungCap}${hd.maNCC?'<br><span style="font-size:10px;color:#94a3b8">['+hd.maNCC+']</span>':''}</td>
       <td style="color:#7c3aed;white-space:nowrap">${hd.soQDTrungThau||"---"}</td>
       <td style="text-align:center">${hd.soNgayThanhToan>0?`<span style="background:#eff6ff;color:#1e40af;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">${hd.soNgayThanhToan} ngày</span>`:"---"}</td>
       <td style="font-weight:600;white-space:nowrap">${fmtSo(tv)} đ</td>
@@ -1457,7 +1496,426 @@ function renderTabNT() {
 }
 
 
-// ── BÁO CÁO CÔNG NỢ NCC ──
+// ── BÁO CÁO HÀNG HÓA TỔNG HỢP ──
+let _bchhData = [], _bchhSort = {col:-1, dir:1}, _bchhColFilter = {};
+
+window.moModalBCHH = function() {
+  // Build flat data from allHD
+  _bchhData = [];
+  const delivered = {}; // itemId → total delivered qty
+  allHD.forEach(hd => {
+    (hd.banGiao||[]).forEach(bg => {
+      (bg.items||[]).forEach(it => {
+        if (it.itemId) delivered[it.itemId] = (delivered[it.itemId]||0) + (it.soLuong||0);
+      });
+    });
+  });
+  allHD.forEach(hd => {
+    (hd.hangHoa||[]).forEach(it => {
+      const slDC = (it.soLuong||0) + (it.tongDC||0);
+      const daBG = delivered[it.id]||0;
+      const conLai = slDC - daBG;
+      const tyLe = slDC > 0 ? Math.round(daBG/slDC*100) : 0;
+      _bchhData.push({
+        ma: it.maThuoc||"",
+        ten: it.ten||"",
+        hoatChat: it.hoatChat||"",
+        nongDo: it.nongDo||"",
+        dangBC: it.dangBaoShe||"",
+        quyCach: it.quyCach||"",
+        sdk: it.sdk||"",
+        coSoSX: it.coSoSX||"",
+        nuocSX: it.nuocSX||"",
+        nhaCungCap: hd.nhaCungCap||"",
+        maNCC: hd.maNCC||"",
+        soHD: hd.soHD,
+        tenHD: hd.ten||"",
+        ngayKy: hd.ngayKy||"",
+        ngayHH: hd.ngayHetHan||"",
+        qdTT: hd.soQDTrungThau||"",
+        ngayTT: hd.ngayTrungThau||"",
+        dvt: it.dvt||"",
+        donGia: it.donGia||0,
+        slHD: it.soLuong||0,
+        tongDC: it.tongDC||0,
+        slDC,
+        daBG,
+        conLai,
+        tyLe,
+        itemId: it.id,
+      });
+    });
+  });
+  // Populate NCC dropdown
+  const nccSet = [...new Set(_bchhData.map(r=>r.nhaCungCap).filter(Boolean))].sort();
+  const nccSel = document.getElementById("bchh_ncc");
+  nccSel.innerHTML = '<option value="">Tất cả NCC</option>' + nccSet.map(n=>`<option value="${escHtml(n)}">${n}</option>`).join("");
+  document.getElementById("bchh_q").value = "";
+  document.getElementById("bchh_tt").value = "";
+  _bchhSort = {col:-1, dir:1};
+  _bchhColFilter = {};
+  renderBCHH();
+  moModal("modalBCHH");
+};
+
+window.renderBCHH = function() {
+  const q = (document.getElementById("bchh_q").value||"").toLowerCase();
+  const ncc = document.getElementById("bchh_ncc").value;
+  const tt = document.getElementById("bchh_tt").value;
+
+  let rows = _bchhData.filter(r => {
+    if (ncc && r.nhaCungCap !== ncc) return false;
+    if (tt === "done" && r.tyLe < 100) return false;
+    if (tt === "partial" && (r.tyLe === 0 || r.tyLe >= 100)) return false;
+    if (tt === "none" && r.daBG > 0) return false;
+    if (tt === "over" && r.conLai >= 0) return false;
+    if (q) {
+      const hay = [r.ma,r.ten,r.hoatChat,r.nhaCungCap,r.maNCC,r.soHD,r.tenHD,r.sdk].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    // Column filters (Set-based multi-select)
+    const colKeys2 = ["ma","ten","hoatChat","nongDo","dangBC","quyCach","sdk","coSoSX","nuocSX","nhaCungCap","soHD","tenHD","ngayKy","ngayHH","qdTT","ngayTT","dvt","donGia","slHD","slDC","daBG","conLai","tyLe"];
+    for (const [ci, fval] of Object.entries(_bchhColFilter)) {
+      const key = colKeys2[parseInt(ci)];
+      if (key && fval instanceof Set && fval.size > 0) {
+        if (!fval.has(String(r[key]||""))) return false;
+      }
+    }
+    return true;
+  });
+
+  document.getElementById("bchh_count").textContent = rows.length + " dòng";
+
+  if (!rows.length) {
+    document.getElementById("bchh_wrap").innerHTML = '<div style="text-align:center;padding:24px;color:#94a3b8">Không có dữ liệu</div>';
+    return;
+  }
+
+  // Sort
+  if (_bchhSort.col >= 0) {
+    const colKeys = ["ma","ten","hoatChat","nongDo","dangBC","quyCach","sdk","coSoSX","nuocSX","nhaCungCap","soHD","tenHD","ngayKy","ngayHH","qdTT","ngayTT","dvt","donGia","slHD","slDC","daBG","conLai","tyLe"];
+    const key = colKeys[_bchhSort.col];
+    rows.sort((a,b) => {
+      const av = a[key]||"", bv = b[key]||"";
+      if (typeof av === "number") return (av-bv)*_bchhSort.dir;
+      return String(av).localeCompare(String(bv))*_bchhSort.dir;
+    });
+  }
+
+  // Get unique values per column for filter dropdowns
+  const colKeys = ["ma","ten","hoatChat","nongDo","dangBC","quyCach","sdk","coSoSX","nuocSX","nhaCungCap","soHD","tenHD","ngayKy","ngayHH","qdTT","ngayTT","dvt","donGia","slHD","slDC","daBG","conLai","tyLe"];
+  const colLabels = ["Mã","Tên thuốc","Hoạt chất","Nồng độ","Dạng BC","Quy cách","GĐKLH/GPNK","Cơ sở SX","Nước SX","Nhà cung cấp","Số HĐ","Tên HĐ","Ngày ký","Ngày HH","QĐ TT","Ngày TT","ĐVT","Đơn giá","SLHĐ","SLĐC","Đã BG","Còn lại","Tỷ lệ"];
+  // Column widths
+  const colW = [60,160,130,70,65,90,120,130,65,160,130,110,75,75,110,75,45,75,50,55,50,60,55];
+  // Sticky columns: 0=Mã, 1=Tên, 2=Hoạt chất
+  const stickyLeft = [0, 60, 220];
+  const stickyN = 3;
+
+  const thCss = (i) => {
+    const isSort = _bchhSort.col===i;
+    const arrow = isSort ? (_bchhSort.dir===1?"▲":"▼") : "⇅";
+    const isSticky = i < stickyN;
+    const stickyStyle = isSticky ? `position:sticky;left:${stickyLeft[i]}px;z-index:4;` : "z-index:2;";
+    return `<th style="padding:0;background:#1e3a8a;color:#fff;font-size:12px;border:1px solid #3b82f6;position:sticky;top:0;${stickyStyle}min-width:${colW[i]}px;max-width:${colW[i]}px;width:${colW[i]}px">
+      <div style="display:flex;align-items:stretch">
+        <div onclick="bchhSort(${i})" style="flex:1;padding:5px 4px;cursor:pointer;word-break:break-word;line-height:1.3" title="Sắp xếp: ${colLabels[i]}">${colLabels[i]} <span style="opacity:${isSort?1:0.5};font-size:9px">${arrow}</span></div>
+        <div onclick="bchhToggleFilter(${i},this)" style="padding:4px 5px;cursor:pointer;border-left:1px solid #3b82f6;background:${_bchhColFilter[i]&&_bchhColFilter[i].size>0?'#2563eb':'transparent'};min-width:18px;text-align:center" title="Lọc theo ${colLabels[i]}">${_bchhColFilter[i]&&_bchhColFilter[i].size>0?'<span style="font-size:10px;background:#fff;color:#1e40af;border-radius:10px;padding:0 3px">'+_bchhColFilter[i].size+'</span>':'▼'}</div>
+      </div>
+    </th>`;
+  };
+
+  const th = colLabels.map((_,i) => thCss(i)).join("");
+
+  const body = rows.map((r,i) => {
+    const bg = i%2===0?'#fff':'#f8fafc';
+    const tyLeColor = r.tyLe>=100?'#22c55e':r.tyLe>0?'#f59e0b':r.conLai<0?'#ef4444':'#94a3b8';
+    const stickyTd = (v,si,style="")=>`<td style="padding:5px 6px;border:1px solid #f1f5f9;background:${bg};font-size:12px;position:sticky;left:${stickyLeft[si]}px;${style}">${v}</td>`;
+    const td = (v,style="")=>`<td style="padding:5px 6px;border:1px solid #f1f5f9;background:${bg};font-size:12px;${style}">${v}</td>`;
+    const slDCCell = r.tongDC !== 0
+      ? `<td style="padding:4px 5px;border:1px solid #f1f5f9;background:#eff6ff;font-size:12px;text-align:right">
+          <button onclick="moModalDCXemByItemId('${r.itemId}','${escHtml(r.ten)}')" style="background:none;border:none;color:#1e40af;font-weight:700;cursor:pointer;text-decoration:underline dotted;padding:0;font-size:12px">${fmtSo(r.slDC)} 🔍</button>
+         </td>`
+      : td(fmtSo(r.slDC),"text-align:right");
+    return `<tr>
+      ${stickyTd(r.ma||'—', 0, "color:#7c3aed")}
+      ${stickyTd('<b style="color:#1e40af">'+escHtml(r.ten)+'</b>', 1)}
+      ${stickyTd(escHtml(r.hoatChat)||'—', 2, "color:#0ea5e9")}
+      ${td(r.nongDo||'—')}
+      ${td(r.dangBC||'—')}
+      ${td(r.quyCach||'—')}
+      ${td(r.sdk||'—',"color:#7c3aed")}
+      ${td(escHtml(r.coSoSX)||'—')}
+      ${td(r.nuocSX||'—')}
+      ${td('<span title="'+escHtml(r.nhaCungCap)+'">'+escHtml(r.nhaCungCap)+(r.maNCC?'<br><span style="font-size:10px;color:#94a3b8">['+r.maNCC+']</span>':'')+'</span>')}
+      ${td('<a style="color:#1e40af;cursor:pointer;font-size:10px;font-weight:600" onclick="dongModal(\'modalBCHH\');moChiTiet(\''+escHtml(r.soHD)+'\')">'+escHtml(r.soHD)+'</a>')}
+      ${td(escHtml(r.tenHD))}
+      ${td(fmtNgay(r.ngayKy),"white-space:nowrap")}
+      ${td(fmtNgay(r.ngayHH),"white-space:nowrap")}
+      ${td(r.qdTT||'—')}
+      ${td(fmtNgay(r.ngayTT),"white-space:nowrap")}
+      ${td(r.dvt||'—',"text-align:center")}
+      ${td(fmtSo(r.donGia),"text-align:right")}
+      ${td(fmtSo(r.slHD),"text-align:right")}
+      ${slDCCell}
+      ${td(fmtSo(r.daBG),"text-align:right;color:#3b82f6;font-weight:600")}
+      ${td(r.conLai<0?'<b style="color:#ef4444">Vượt '+fmtSo(Math.abs(r.conLai))+'</b>':fmtSo(r.conLai),"text-align:right;font-weight:700")}
+      <td style="padding:4px 5px;border:1px solid #f1f5f9;background:${bg};text-align:center">
+        <span style="background:${tyLeColor}20;color:${tyLeColor};border-radius:20px;padding:2px 8px;font-weight:700;font-size:12px">${r.tyLe}%</span>
+      </td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("bchh_wrap").innerHTML =
+    `<div style="overflow:auto;max-height:68vh;position:relative">
+      <table style="border-collapse:collapse;table-layout:fixed">
+        <thead><tr>${th}</tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
+}
+
+window.bchhToggleFilter = function(colIdx, el) {
+  const colKeys = ["ma","ten","hoatChat","nongDo","dangBC","quyCach","sdk","coSoSX","nuocSX","nhaCungCap","soHD","tenHD","ngayKy","ngayHH","qdTT","ngayTT","dvt","donGia","slHD","slDC","daBG","conLai","tyLe"];
+  const colLabels = ["Mã","Tên thuốc","Hoạt chất","Nồng độ","Dạng BC","Quy cách","GĐKLH/GPNK","Cơ sở SX","Nước SX","Nhà cung cấp","Số HĐ","Tên HĐ","Ngày ký","Ngày HH","QĐ TT","Ngày TT","ĐVT","Đơn giá","SLHĐ","SLĐC","Đã BG","Còn lại","Tỷ lệ"];
+  const key = colKeys[colIdx];
+
+  // Remove existing popup
+  const existing = document.getElementById("bchhFilterPop");
+  if (existing) { existing.remove(); if (existing.dataset.col == colIdx) return; }
+
+  // Get unique values from ALL data (not filtered) for this column
+  const vals = [...new Set(_bchhData.map(r => {
+    const v = r[key];
+    return (v !== undefined && v !== null && v !== "") ? String(v) : null;
+  }).filter(Boolean))].sort((a,b) => {
+    const na = Number(a), nb = Number(b);
+    return isNaN(na)||isNaN(nb) ? a.localeCompare(b, 'vi') : na-nb;
+  });
+
+  const curSel = _bchhColFilter[colIdx] || new Set();
+  const rect = el.getBoundingClientRect();
+  const popLeft = Math.max(4, Math.min(rect.left, window.innerWidth - 280));
+
+  const pop = document.createElement("div");
+  pop.id = "bchhFilterPop";
+  pop.dataset.col = colIdx;
+  pop.style.cssText = `position:fixed;top:${rect.bottom+2}px;left:${popLeft}px;z-index:9999;background:#fff;border:1.5px solid #bfdbfe;border-radius:10px;box-shadow:0 8px 28px #0003;width:260px;font-size:12px`;
+
+  function buildPop(searchVal) {
+    const filtered = searchVal ? vals.filter(v=>v.toLowerCase().includes(searchVal.toLowerCase())) : vals;
+    const allChecked = filtered.length > 0 && filtered.every(v=>curSel.has(v));
+    const items = filtered.map(v => {
+      const chk = curSel.has(v);
+      const disp = v.length > 30 ? v.substring(0,30)+'…' : v;
+      return `<label style="display:flex;align-items:center;gap:7px;padding:5px 12px;cursor:pointer;border-radius:4px" onmouseenter="this.style.background='#f0f9ff'" onmouseleave="this.style.background=''">
+        <input type="checkbox" data-val="${v.replace(/"/g,'&quot;')}" ${chk?'checked':''} onchange="bchhCheckChange(${colIdx},this)" style="cursor:pointer">
+        <span title="${v.replace(/"/g,'&quot;')}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${disp}</span>
+      </label>`;
+    }).join("");
+    pop.innerHTML = `
+      <div style="padding:8px 10px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+        <b style="color:#1e40af;font-size:12px">Lọc: ${colLabels[colIdx]}</b>
+        <button onclick="bchhClearColFilter(${colIdx})" style="font-size:10px;background:#fee2e2;color:#ef4444;border:none;border-radius:6px;padding:2px 7px;cursor:pointer" title="Xóa lọc cột này">✕ Xóa</button>
+      </div>
+      <div style="padding:6px 10px;border-bottom:1px solid #f1f5f9">
+        <input id="bchhPopSearch_${colIdx}" placeholder="🔍 Tìm..." value="${searchVal||''}" 
+          oninput="bchhPopRebuild(${colIdx},this.value)"
+          style="width:100%;font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;outline:none"
+          onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+      </div>
+      <div style="padding:4px 10px;border-bottom:1px solid #f1f5f9">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:600;color:#374151">
+          <input type="checkbox" id="bchhCheckAll_${colIdx}" ${allChecked?'checked':''} onchange="bchhCheckAll(${colIdx},this.checked)" style="cursor:pointer">
+          <span>Chọn tất cả (${filtered.length})</span>
+        </label>
+      </div>
+      <div id="bchhPopItems_${colIdx}" style="max-height:200px;overflow-y:auto;padding:2px 0">
+        ${items.length ? items : '<div style="text-align:center;padding:10px;color:#94a3b8;font-size:11px">Không có giá trị</div>'}
+      </div>
+      <div style="padding:8px 10px;border-top:1px solid #f1f5f9;display:flex;gap:6px;justify-content:flex-end">
+        <span style="font-size:11px;color:#64748b;align-self:center">Đã chọn: <b style="color:#1e40af">${curSel.size}</b></span>
+        <button onclick="bchhApplyColFilter(${colIdx})" class="btn btn-primary btn-sm">✓ Áp dụng</button>
+      </div>`;
+  }
+
+  buildPop("");
+  pop._buildPop = buildPop;
+  document.body.appendChild(pop);
+
+  // Focus search
+  setTimeout(() => { const s = document.getElementById('bchhPopSearch_'+colIdx); if(s) s.focus(); }, 50);
+
+  // Close on outside click
+  setTimeout(() => {
+    const close = (e) => {
+      if (!pop.contains(e.target) && e.target !== el) {
+        pop.remove();
+        document.removeEventListener("click", close);
+      }
+    };
+    document.addEventListener("click", close);
+  }, 10);
+};
+
+window.bchhPopRebuild = function(colIdx, searchVal) {
+  const colKeys = ["ma","ten","hoatChat","nongDo","dangBC","quyCach","sdk","coSoSX","nuocSX","nhaCungCap","soHD","tenHD","ngayKy","ngayHH","qdTT","ngayTT","dvt","donGia","slHD","slDC","daBG","conLai","tyLe"];
+  const key = colKeys[colIdx];
+  const curSel = _bchhColFilter[colIdx] || new Set();
+  const vals = [...new Set(_bchhData.map(r => {
+    const v = r[key];
+    return (v !== undefined && v !== null && v !== "") ? String(v) : null;
+  }).filter(Boolean))].sort((a,b) => {
+    const na = Number(a), nb = Number(b);
+    return isNaN(na)||isNaN(nb) ? a.localeCompare(b,'vi') : na-nb;
+  });
+  const filtered = searchVal ? vals.filter(v=>v.toLowerCase().includes(searchVal.toLowerCase())) : vals;
+
+  // Only update items list and checkAll — NOT the input itself
+  const itemsEl = document.getElementById('bchhPopItems_'+colIdx);
+  const allChkEl = document.getElementById('bchhCheckAll_'+colIdx);
+  if (!itemsEl) return;
+
+  const allChecked = filtered.length > 0 && filtered.every(v=>curSel.has(v));
+  if (allChkEl) {
+    allChkEl.checked = allChecked;
+    allChkEl.indeterminate = !allChecked && filtered.some(v=>curSel.has(v));
+    // Update label count
+    const lbl = allChkEl.parentElement.querySelector('span');
+    if (lbl) lbl.textContent = 'Chọn tất cả ('+filtered.length+')';
+  }
+
+  if (!filtered.length) {
+    itemsEl.innerHTML = '<div style="text-align:center;padding:10px;color:#94a3b8;font-size:11px">Không có giá trị</div>';
+    return;
+  }
+  itemsEl.innerHTML = filtered.map(v => {
+    const chk = curSel.has(v);
+    const disp = v.length > 30 ? v.substring(0,30)+'…' : v;
+    return `<label style="display:flex;align-items:center;gap:7px;padding:5px 12px;cursor:pointer;border-radius:4px" onmouseenter="this.style.background='#f0f9ff'" onmouseleave="this.style.background=''">
+      <input type="checkbox" data-val="${v.replace(/"/g,'&quot;')}" ${chk?'checked':''} onchange="bchhCheckChange(${colIdx},this)" style="cursor:pointer">
+      <span title="${v.replace(/"/g,'&quot;')}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${disp}</span>
+    </label>`;
+  }).join("");
+};
+
+window.bchhCheckChange = function(colIdx, chkEl) {
+  const val = chkEl.dataset.val;
+  if (!_bchhColFilter[colIdx]) _bchhColFilter[colIdx] = new Set();
+  if (chkEl.checked) { _bchhColFilter[colIdx].add(val); }
+  else { _bchhColFilter[colIdx].delete(val); if (_bchhColFilter[colIdx].size===0) delete _bchhColFilter[colIdx]; }
+  // Update "chọn tất cả" state
+  const pop = document.getElementById("bchhFilterPop");
+  if (!pop) return;
+  const allChk = document.getElementById('bchhCheckAll_'+colIdx);
+  if (allChk) {
+    const all = [...pop.querySelectorAll('input[data-val]')];
+    allChk.checked = all.length > 0 && all.every(c=>c.checked);
+    allChk.indeterminate = !allChk.checked && all.some(c=>c.checked);
+  }
+  // Update count
+  const countEl = pop.querySelector('b[style*="color:#1e40af"]');
+  if (countEl) countEl.textContent = _bchhColFilter[colIdx]?_bchhColFilter[colIdx].size:0;
+};
+
+window.bchhCheckAll = function(colIdx, checked) {
+  const colKeys = ["ma","ten","hoatChat","nongDo","dangBC","quyCach","sdk","coSoSX","nuocSX","nhaCungCap","soHD","tenHD","ngayKy","ngayHH","qdTT","ngayTT","dvt","donGia","slHD","slDC","daBG","conLai","tyLe"];
+  const key = colKeys[colIdx];
+  const searchInput = document.getElementById('bchhPopSearch_'+colIdx);
+  const searchVal = searchInput ? searchInput.value : '';
+  const vals = [...new Set(_bchhData.map(r=>String(r[key]||"")).filter(Boolean))];
+  const filtered = searchVal ? vals.filter(v=>v.toLowerCase().includes(searchVal.toLowerCase())) : vals;
+  if (!_bchhColFilter[colIdx]) _bchhColFilter[colIdx] = new Set();
+  filtered.forEach(v => { if(checked) _bchhColFilter[colIdx].add(v); else _bchhColFilter[colIdx].delete(v); });
+  if (_bchhColFilter[colIdx].size===0) delete _bchhColFilter[colIdx];
+  // Re-check all checkboxes in popup
+  const pop = document.getElementById("bchhFilterPop");
+  if (pop) pop.querySelectorAll('input[data-val]').forEach(c=>{ c.checked = checked; });
+  // Update count
+  const countEl = pop ? pop.querySelector('b[style*="color:#1e40af"]') : null;
+  if (countEl) countEl.textContent = _bchhColFilter[colIdx]?_bchhColFilter[colIdx].size:0;
+};
+
+window.bchhApplyColFilter = function(colIdx) {
+  const pop = document.getElementById("bchhFilterPop");
+  if (pop) pop.remove();
+  renderBCHH();
+};
+
+window.bchhClearColFilter = function(colIdx) {
+  delete _bchhColFilter[colIdx];
+  const pop = document.getElementById("bchhFilterPop");
+  if (pop) pop.remove();
+  renderBCHH();
+};
+
+function applyBCHHColFilters() { renderBCHH(); }
+
+
+window.bchhSort = function(colIdx) {
+  if (_bchhSort.col === colIdx) {
+    _bchhSort.dir *= -1;
+  } else {
+    _bchhSort.col = colIdx;
+    _bchhSort.dir = 1;
+  }
+  renderBCHH();
+};
+
+window.moModalDCXemByItemId = async function(itemId, tenThuoc) {
+  let foundIt = null, foundHD = null;
+  for (const hd of allHD) {
+    const it = (hd.hangHoa||[]).find(x=>x.id===itemId);
+    if (it) { foundIt = it; foundHD = hd; break; }
+  }
+  if (!foundIt || !foundHD) { showToast("Không tìm thấy mặt hàng","error"); return; }
+  currentHD = foundHD;
+  _dcHHId = itemId;
+  _dcDonGia = foundIt.donGia || 0;
+  _dcSoLuongHD = foundIt.soLuong || 0;
+  document.getElementById("dcTitle").textContent = "🔄 Lịch sử điều chỉnh: " + foundIt.ten;
+  document.getElementById("dcItemInfo").innerHTML =
+    '<b>Tên:</b> '+foundIt.ten+' &nbsp;|&nbsp; <b>SL HĐ gốc:</b> '+fmtSo(foundIt.soLuong)+' '+foundIt.dvt
+    +' &nbsp;|&nbsp; <b>Tổng ĐC:</b> <span style="color:'+((foundIt.tongDC||0)>=0?'#22c55e':'#ef4444')+';font-weight:700">'+((foundIt.tongDC||0)>=0?'+':'')+fmtSo(foundIt.tongDC||0)+'</span>'
+    +' &nbsp;|&nbsp; <b>SL sau ĐC:</b> <span style="color:#1e40af;font-weight:700">'+fmtSo((foundIt.soLuong||0)+(foundIt.tongDC||0))+' '+foundIt.dvt+'</span>'
+    +' &nbsp;|&nbsp; <b>HĐ:</b> '+foundHD.soHD;
+  const formThem = document.querySelector('#modalDieuChinh .modal-ct > div:nth-child(3)');
+  if (formThem) formThem.style.display = 'none';
+  await loadLichSuDC(itemId);
+  document.getElementById("modalDieuChinh").classList.add("open");
+};
+
+window.xuatBCHHExcel = function() {
+  if (!_bchhData.length) return;
+  const headers = ["Mã","Tên thuốc","Hoạt chất","Nồng độ","Dạng BC","Quy cách","GĐKLH/GPNK","Cơ sở SX","Nước SX","Nhà cung cấp","Số HĐ","Tên HĐ","Ngày ký","Ngày HH","QĐ trúng thầu","Số QĐ trúng thầu","Ngày trúng thầu","ĐVT","Đơn giá","SLHĐ","SLĐC","Số lượng bàn giao","Số lượng còn lại sau ĐC","Tỷ lệ đã thực hiện"];
+  const q = (document.getElementById("bchh_q").value||"").toLowerCase();
+  const ncc = document.getElementById("bchh_ncc").value;
+  const tt = document.getElementById("bchh_tt").value;
+  const rows = _bchhData.filter(r => {
+    if (ncc && r.nhaCungCap !== ncc) return false;
+    if (tt === "done" && r.tyLe < 100) return false;
+    if (tt === "partial" && (r.tyLe === 0 || r.tyLe >= 100)) return false;
+    if (tt === "none" && r.daBG > 0) return false;
+    if (tt === "over" && r.conLai >= 0) return false;
+    if (q) {
+      const hay = [r.ma,r.ten,r.hoatChat,r.nhaCungCap,r.maNCC,r.soHD,r.tenHD,r.sdk].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  }).map(r=>[r.ma,r.ten,r.hoatChat,r.nongDo,r.dangBC,r.quyCach,r.sdk,r.coSoSX,r.nuocSX,r.nhaCungCap+(r.maNCC?" ["+r.maNCC+"]":""),r.soHD,r.tenHD,fmtNgay(r.ngayKy),fmtNgay(r.ngayHH),r.qdTT,r.qdTT,fmtNgay(r.ngayTT),r.dvt,r.donGia,r.slHD,r.slDC,r.daBG,r.conLai,r.tyLe+"%"]);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ["BÁO CÁO HÀNG HÓA TỔNG HỢP - Ngày xuất: "+fmtNgay(todayStr())],
+    [],
+    headers,
+    ...rows
+  ]);
+  ws["!cols"] = [6,20,16,8,8,10,16,18,8,18,18,14,10,10,14,14,10,8,8,6,6,6,8,10].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws, "BaoCaoHangHoa");
+  XLSX.writeFile(wb, "BaoCaoHangHoa_"+todayStr()+".xlsx");
+  showToast("Đã xuất Excel!");
+};
+
+
 let _cnNCC = null; // NCC đang chọn
 
 window.moModalCongNo = async function() {
