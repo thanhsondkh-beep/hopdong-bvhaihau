@@ -176,6 +176,15 @@ th{position:relative;}
 .sticky-table thead th.col-sua{background:#f8fafc;}
 .sticky-table tr:hover td.col-sua{background:#f0f9ff;}
 .tong-row td.col-sua{background:#f0fdf4 !important;}
+
+/* ── CẢNH BÁO THANH TOÁN ── */
+.cbtt-tab{background:#f1f5f9;color:#374151;border:1px solid #e2e8f0;}
+.cbtt-tab.active{background:#1e40af;color:#fff;border-color:#1e40af;}
+.cbtt-row-qh   td{background:#fff5f5 !important;}
+.cbtt-row-lt10 td{background:#fff8f0 !important;}
+.cbtt-row-t30  td{background:#fffef0 !important;}
+.cbtt-row-gt30 td{background:#f0fdf4 !important;}
+.cbtt-row-nhan td{background:#f0f9ff !important;}
 </style>
 </head>
 <body>
@@ -217,6 +226,7 @@ th{position:relative;}
     <div class="header-btns">
       <span id="userEmailDisplay" style="color:#bfdbfe;font-size:11px;padding:5px 10px;background:#ffffff18;border-radius:7px"></span>
       <button class="btn btn-outline" style="background:transparent;color:#fff;border-color:#93c5fd" onclick="xuatCSV()">📥 Xuất CSV</button>
+      <button class="btn btn-outline" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;position:relative" onclick="moModalCanhBaoTT()" id="btnCanhBaoTT">🔔 Cảnh báo TT<span id="badgeCanhBao" style="display:none;position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;line-height:18px;text-align:center"></span></button>
       <button class="btn btn-outline" style="background:#fef3c7;color:#92400e;border-color:#fde68a" onclick="moModalCongNo()">📊 Công nợ NCC</button>
       <button class="btn btn-outline" style="background:#f0fdf4;color:#166534;border-color:#86efac" onclick="moModalBCHH()">📋 Báo cáo HH</button>
       <label class="btn btn-outline" style="background:transparent;color:#86efac;border-color:#86efac;cursor:pointer;font-size:12px" title="Import dữ liệu từ file JSON xuất từ Apps Script cũ">📤 Import dữ liệu cũ<input type="file" id="importJSONFile" accept=".json" style="display:none" onchange="importJSONMigration(this)"></label>
@@ -627,6 +637,45 @@ th{position:relative;}
   </div>
 </div>
 
+
+<!-- MODAL: CẢNH BÁO THANH TOÁN -->
+<div class="modal-overlay" id="modalCanhBaoTT">
+  <div class="modal" style="max-width:99.5vw;max-height:95vh;display:flex;flex-direction:column">
+    <div class="modal-header" style="flex-shrink:0">
+      <div>
+        <div class="modal-title">🔔 Cảnh báo Thanh toán</div>
+        <div style="font-size:11px;color:#64748b;margin-top:2px">Hóa đơn chưa / chưa đủ thanh toán · Sắp xếp theo hạn gần nhất</div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="dongModal('modalCanhBaoTT')">✕ Đóng</button>
+    </div>
+
+    <!-- Bộ lọc nhanh -->
+    <div style="flex-shrink:0;background:#f8fafc;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border:1px solid #e2e8f0">
+      <div style="font-size:11px;font-weight:700;color:#374151;white-space:nowrap">📅 Lọc theo hạn TT:</div>
+      <button class="btn btn-sm cbtt-tab active" data-tab="qh"   onclick="cbttChonTab(this)">🔴 Quá hạn</button>
+      <button class="btn btn-sm cbtt-tab"         data-tab="lt10"  onclick="cbttChonTab(this)">🟠 &lt; 10 ngày</button>
+      <button class="btn btn-sm cbtt-tab"         data-tab="t30"   onclick="cbttChonTab(this)">🟡 10–30 ngày</button>
+      <button class="btn btn-sm cbtt-tab"         data-tab="gt30"  onclick="cbttChonTab(this)">🟢 &gt; 30 ngày</button>
+      <button class="btn btn-sm cbtt-tab"         data-tab="all"   onclick="cbttChonTab(this)">📋 Tất cả</button>
+      <div style="display:flex;align-items:center;gap:4px;margin-left:6px">
+        <span style="font-size:11px;color:#64748b;white-space:nowrap">Từ:</span>
+        <input type="date" id="cbtt_tu" style="width:130px;font-size:12px;padding:5px 8px" oninput="cbttChonKhoang()">
+        <span style="font-size:11px;color:#64748b">–</span>
+        <input type="date" id="cbtt_den" style="width:130px;font-size:12px;padding:5px 8px" oninput="cbttChonKhoang()">
+      </div>
+      <input type="text" id="cbtt_search" placeholder="🔍 Tìm NCC / HĐ / số HĐ..." style="flex:1;min-width:180px;font-size:12px;padding:6px 10px" oninput="renderCanhBaoTT()">
+    </div>
+
+    <!-- Tổng hợp nhanh -->
+    <div id="cbtt_summary" style="flex-shrink:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px"></div>
+
+    <!-- Bảng kết quả -->
+    <div style="flex:1;overflow-y:auto;border-radius:10px;border:1px solid #e2e8f0">
+      <div id="cbtt_table"></div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: DANH MỤC NHÀ CUNG CẤP -->
 <div class="modal-overlay" id="modalNCC">
   <div class="modal" style="max-width:900px;max-height:92vh;overflow-y:auto">
@@ -948,7 +997,7 @@ async function taiDuLieu() {
 }
 
 // ── RENDER ──
-function renderAll() { renderStats(); renderTableHeader(); renderTable(); }
+function renderAll() { renderStats(); renderTableHeader(); renderTable(); capNhatBadgeCanhBao(); }
 
 function getStatusInfo(hd) {
   if (hd.daThanhLy) return { lbl:"Đã thanh lý", cls:"badge-liq", key:"liq" };
@@ -2202,6 +2251,25 @@ window.luuNCC = async function() {
   const ten = document.getElementById("ncc_ten").value.trim();
   if (!ten) { showToast("Nhập tên nhà cung cấp!","error"); return; }
   const ma = _editNCCMa || document.getElementById("ncc_ma").value;
+  const mst = document.getElementById("ncc_mst").value.trim();
+
+  // Kiểm tra trùng khi thêm mới hoặc sửa (loại trừ chính nó)
+  const tenNorm = ten.toLowerCase().replace(/\s+/g," ");
+  const trungTen = allNCC.find(n =>
+    n.ma !== ma &&
+    (n.ten||"").toLowerCase().replace(/\s+/g," ") === tenNorm
+  );
+  const trungMST = mst ? allNCC.find(n =>
+    n.ma !== ma && n.mst && n.mst.replace(/\s/g,"") === mst.replace(/\s/g,"")
+  ) : null;
+
+  if (trungTen || trungMST) {
+    let msg = "⚠️ Phát hiện trùng lặp:\n";
+    if (trungTen) msg += `\n• Tên "${ten}" đã tồn tại (Mã: ${trungTen.ma})`;
+    if (trungMST) msg += `\n• MST "${mst}" đã được dùng bởi "${trungMST.ten}" (Mã: ${trungMST.ma})`;
+    msg += "\n\nBạn có muốn lưu quá không?";
+    if (!confirm(msg)) return;
+  }
   const data = {
     ma, ten,
     vietTat: document.getElementById("ncc_vietTat").value.trim(),
@@ -3786,6 +3854,272 @@ window.batDauImport = async function() {
     : `⚠️ ${done} thành công, ${loi} lỗi`;
   document.getElementById("btnCloseImport").style.display = "";
 };
+
+
+// ══════════════════════════════════════════════
+// CẢNH BÁO THANH TOÁN
+// ══════════════════════════════════════════════
+let _cbttTab = "qh";       // tab hiện tại
+let _cbttTu  = "";
+let _cbttDen = "";
+
+window.moModalCanhBaoTT = function() {
+  _cbttTab = "qh";
+  _cbttTu  = "";
+  _cbttDen = "";
+  document.getElementById("cbtt_tu").value  = "";
+  document.getElementById("cbtt_den").value = "";
+  document.getElementById("cbtt_search").value = "";
+  // reset tab buttons
+  document.querySelectorAll(".cbtt-tab").forEach(b => {
+    b.classList.toggle("active", b.dataset.tab === "qh");
+  });
+  renderCanhBaoTT();
+  moModal("modalCanhBaoTT");
+};
+
+window.cbttChonTab = function(btn) {
+  _cbttTab = btn.dataset.tab;
+  _cbttTu  = "";
+  _cbttDen = "";
+  document.getElementById("cbtt_tu").value  = "";
+  document.getElementById("cbtt_den").value = "";
+  document.querySelectorAll(".cbtt-tab").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderCanhBaoTT();
+};
+
+window.cbttChonKhoang = function() {
+  _cbttTu  = document.getElementById("cbtt_tu").value;
+  _cbttDen = document.getElementById("cbtt_den").value;
+  _cbttTab = "custom";
+  document.querySelectorAll(".cbtt-tab").forEach(b => b.classList.remove("active"));
+  renderCanhBaoTT();
+};
+
+function cbttTinhHanTT(bg, hd) {
+  // Ưu tiên hanThanhToan lưu trong BG, fallback tính từ soNgayThanhToan
+  if (bg.hanThanhToan) return bg.hanThanhToan;
+  const ngay = bg.ngay || "";
+  const sNgay = Number(hd.soNgayThanhToan) || 0;
+  if (ngay && sNgay > 0) {
+    const d = new Date(ngay); d.setDate(d.getDate() + sNgay - 1);
+    return d.toISOString().slice(0, 10);
+  }
+  return "";
+}
+
+function cbttSoNgay(hanTT) {
+  if (!hanTT) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const han   = new Date(hanTT); han.setHours(0,0,0,0);
+  return Math.round((han - today) / 86400000);
+}
+
+function cbttNhomRow(soNgay) {
+  if (soNgay === null) return "nhan";  // không xác định
+  if (soNgay < 0)  return "qh";
+  if (soNgay < 10) return "lt10";
+  if (soNgay <= 30) return "t30";
+  return "gt30";
+}
+
+window.renderCanhBaoTT = function() {
+  const today = todayStr();
+  const q = (document.getElementById("cbtt_search")||{value:""}).value.toLowerCase().trim();
+
+  // Thu thập tất cả hóa đơn chưa TT (unpaid hoặc partial)
+  let rows = [];
+  allHD.forEach(hd => {
+    (hd.banGiao||[]).forEach(bg => {
+      const tt = bg.trangThaiTT || "unpaid";
+      if (tt === "paid") return;                         // bỏ qua đã TT đủ
+      const tongBG = calcItemsTotal(bg.items||[]);
+      if (tongBG <= 0) return;
+      const daTT   = tt === "partial" ? (Number(bg.soTienDaTT)||0) : 0;
+      const chuaTT = tongBG - daTT;
+      if (chuaTT <= 0) return;
+
+      const hanTT  = cbttTinhHanTT(bg, hd);
+      const soNgay = cbttSoNgay(hanTT);
+      const nhom   = cbttNhomRow(soNgay);
+
+      rows.push({
+        soHD:         hd.soHD,
+        tenHD:        hd.ten,
+        ncc:          hd.nhaCungCap || "---",
+        soQDTrungThau:hd.soQDTrungThau || "",
+        ngayBG:       bg.ngay || "",
+        soHoaDon:     bg.soHoaDon || "",
+        soPhieuNK:    bg.soPhieuNK || "",
+        tongBG, daTT, chuaTT,
+        trangThai: tt,
+        hanTT, soNgay, nhom
+      });
+    });
+  });
+
+  // Lọc theo tab / khoảng
+  let filtered = rows.filter(r => {
+    if (_cbttTab === "all")    return true;
+    if (_cbttTab === "qh")     return r.nhom === "qh";
+    if (_cbttTab === "lt10")   return r.nhom === "lt10";
+    if (_cbttTab === "t30")    return r.nhom === "t30";
+    if (_cbttTab === "gt30")   return r.nhom === "gt30" || r.nhom === "nhan";
+    if (_cbttTab === "custom") {
+      if (!r.hanTT) return false;
+      if (_cbttTu && r.hanTT < _cbttTu) return false;
+      if (_cbttDen && r.hanTT > _cbttDen) return false;
+      return true;
+    }
+    return true;
+  });
+
+  // Lọc tìm kiếm
+  if (q) filtered = filtered.filter(r =>
+    r.ncc.toLowerCase().includes(q) ||
+    r.soHD.toLowerCase().includes(q) ||
+    r.tenHD.toLowerCase().includes(q) ||
+    r.soHoaDon.toLowerCase().includes(q) ||
+    r.soPhieuNK.toLowerCase().includes(q) ||
+    r.soQDTrungThau.toLowerCase().includes(q)
+  );
+
+  // Sắp xếp: hạn sớm nhất lên trên (null xuống cuối)
+  filtered.sort((a, b) => {
+    if (!a.hanTT && !b.hanTT) return 0;
+    if (!a.hanTT) return 1;
+    if (!b.hanTT) return -1;
+    return a.hanTT.localeCompare(b.hanTT);
+  });
+
+  // Summary cards
+  const qh   = rows.filter(r => r.nhom === "qh");
+  const lt10 = rows.filter(r => r.nhom === "lt10");
+  const t30  = rows.filter(r => r.nhom === "t30");
+  const gt30 = rows.filter(r => r.nhom === "gt30" || r.nhom === "nhan");
+  const sumCards = [
+    {icon:"🔴", lbl:"Quá hạn",        cnt:qh.length,   amt:qh.reduce((s,r)=>s+r.chuaTT,0),   bg:"#fee2e2",bc:"#fca5a5",tc:"#b91c1c",tab:"qh"},
+    {icon:"🟠", lbl:"< 10 ngày",      cnt:lt10.length, amt:lt10.reduce((s,r)=>s+r.chuaTT,0), bg:"#fff7ed",bc:"#fdba74",tc:"#c2410c",tab:"lt10"},
+    {icon:"🟡", lbl:"10 – 30 ngày",   cnt:t30.length,  amt:t30.reduce((s,r)=>s+r.chuaTT,0),  bg:"#fefce8",bc:"#fde047",tc:"#92400e",tab:"t30"},
+    {icon:"🟢", lbl:"Trên 30 ngày",   cnt:gt30.length, amt:gt30.reduce((s,r)=>s+r.chuaTT,0), bg:"#f0fdf4",bc:"#86efac",tc:"#166534",tab:"gt30"},
+  ];
+  document.getElementById("cbtt_summary").innerHTML = sumCards.map(c => `
+    <div onclick="cbttChonTabById('${c.tab}')" style="background:${c.bg};border:1.5px solid ${c.bc};border-radius:10px;padding:10px 14px;cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 2px 8px #0002'" onmouseout="this.style.boxShadow=''">
+      <div style="font-size:18px;margin-bottom:2px">${c.icon} <span style="font-size:15px;font-weight:800;color:${c.tc}">${c.cnt}</span> <span style="font-size:11px;font-weight:600;color:${c.tc}">${c.lbl}</span></div>
+      <div style="font-size:12px;font-weight:700;color:${c.tc}">${fmtSo(c.amt)} đ</div>
+    </div>`).join("");
+
+  // Cập nhật badge header
+  const tongCanhBao = qh.length + lt10.length;
+  const badge = document.getElementById("badgeCanhBao");
+  if (tongCanhBao > 0) {
+    badge.style.display = ""; badge.textContent = tongCanhBao > 99 ? "99+" : tongCanhBao;
+  } else {
+    badge.style.display = "none";
+  }
+
+  if (!filtered.length) {
+    document.getElementById("cbtt_table").innerHTML =
+      '<div style="text-align:center;padding:40px;color:#94a3b8;font-size:13px">✅ Không có hóa đơn nào trong nhóm này</div>';
+    return;
+  }
+
+  const nhomLabel = {"qh":"🔴 Quá hạn","lt10":"🟠 < 10 ngày","t30":"🟡 10–30 ngày","gt30":"🟢 > 30 ngày","nhan":"⚪ Chưa có hạn TT"};
+  const nhomOrder = ["qh","lt10","t30","gt30","nhan"];
+
+  // Nhóm theo nhom để thêm separator màu
+  let lastNhom = null;
+  const bodyRows = filtered.map((r, idx) => {
+    let separator = "";
+    if (r.nhom !== lastNhom && (_cbttTab === "all" || _cbttTab === "custom")) {
+      lastNhom = r.nhom;
+      const lblColor = {qh:"#b91c1c",lt10:"#c2410c",t30:"#92400e",gt30:"#166534",nhan:"#64748b"};
+      const lblBg    = {qh:"#fee2e2",lt10:"#fff7ed",t30:"#fefce8",gt30:"#f0fdf4",nhan:"#f8fafc"};
+      separator = `<tr><td colspan="12" style="padding:6px 12px;font-size:11px;font-weight:800;color:${lblColor[r.nhom]};background:${lblBg[r.nhom]};border-top:2px solid ${lblColor[r.nhom]}40">${nhomLabel[r.nhom]||""}</td></tr>`;
+    }
+
+    const soNgayTxt = r.soNgay === null ? "—"
+      : r.soNgay < 0 ? `<b style="color:#ef4444">Quá ${-r.soNgay} ngày</b>`
+      : r.soNgay === 0 ? `<b style="color:#ef4444">Hôm nay!</b>`
+      : `<span style="color:${r.soNgay<10?"#c2410c":r.soNgay<=30?"#92400e":"#166534"};font-weight:700">Còn ${r.soNgay} ngày</span>`;
+
+    const ttBadge = r.trangThai === "partial"
+      ? `<span class="badge badge-partial">⚡ Một phần</span>`
+      : `<span class="badge badge-unpaid">❌ Chưa TT</span>`;
+
+    return separator + `<tr class="cbtt-row-${r.nhom}">
+      <td style="padding:6px 8px;font-size:11px;color:#94a3b8;text-align:center">${idx+1}</td>
+      <td style="padding:6px 8px;font-weight:700;color:#1e40af;white-space:nowrap">${r.soHD}</td>
+      <td style="padding:6px 8px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#374151" title="${r.tenHD}">${r.tenHD}</td>
+      <td style="padding:6px 8px;color:#7c3aed;font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.ncc}">${r.ncc}</td>
+      <td style="padding:6px 8px;color:#0ea5e9;font-size:11px;white-space:nowrap">${r.soQDTrungThau||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="padding:6px 8px;text-align:center;white-space:nowrap">${fmtNgay(r.ngayBG)}</td>
+      <td style="padding:6px 8px;color:#166534;font-size:11px;white-space:nowrap">${r.soHoaDon||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="padding:6px 8px;color:#0369a1;font-size:11px;white-space:nowrap">${r.soPhieuNK||'<span style="color:#cbd5e1">—</span>'}</td>
+      <td style="padding:6px 8px;text-align:center;white-space:nowrap;font-weight:700;color:${!r.hanTT?"#94a3b8":r.soNgay<0?"#ef4444":r.soNgay<10?"#c2410c":"#374151"}">${r.hanTT?fmtNgay(r.hanTT):"—"}</td>
+      <td style="padding:6px 8px;text-align:center">${soNgayTxt}</td>
+      <td style="padding:6px 8px;text-align:center">${ttBadge}</td>
+      <td style="padding:6px 8px;text-align:right;font-weight:800;color:#ef4444;white-space:nowrap">${fmtSo(r.chuaTT)} đ</td>
+    </tr>`;
+  });
+
+  // Tổng dòng cuối
+  const tongChuaTT = filtered.reduce((s,r)=>s+r.chuaTT,0);
+  const tongRow = `<tr style="background:#fef2f2;border-top:2px solid #fca5a5">
+    <td colspan="11" style="padding:8px 12px;font-weight:800;color:#b91c1c;text-align:right">Tổng chưa thanh toán (${filtered.length} hóa đơn):</td>
+    <td style="padding:8px 12px;font-weight:800;color:#b91c1c;text-align:right;font-size:14px;white-space:nowrap">${fmtSo(tongChuaTT)} đ</td>
+  </tr>`;
+
+  document.getElementById("cbtt_table").innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#1e3a8a;color:#fff;position:sticky;top:0;z-index:2">
+        <th style="padding:7px 8px;width:30px">#</th>
+        <th style="padding:7px 8px;text-align:left;white-space:nowrap">Số HĐ</th>
+        <th style="padding:7px 8px;text-align:left">Tên hợp đồng</th>
+        <th style="padding:7px 8px;text-align:left">Nhà cung cấp</th>
+        <th style="padding:7px 8px;text-align:left;white-space:nowrap">QĐ trúng thầu</th>
+        <th style="padding:7px 8px;text-align:center;white-space:nowrap">Ngày BG</th>
+        <th style="padding:7px 8px;text-align:left;white-space:nowrap">Số hóa đơn</th>
+        <th style="padding:7px 8px;text-align:left;white-space:nowrap">Số PNK</th>
+        <th style="padding:7px 8px;text-align:center;white-space:nowrap">Hạn TT</th>
+        <th style="padding:7px 8px;text-align:center;white-space:nowrap">Còn / Quá hạn</th>
+        <th style="padding:7px 8px;text-align:center">Trạng thái</th>
+        <th style="padding:7px 8px;text-align:right;white-space:nowrap">Còn nợ (đ)</th>
+      </tr></thead>
+      <tbody>${bodyRows.join("")}${tongRow}</tbody>
+    </table>`;
+};
+
+window.cbttChonTabById = function(tab) {
+  _cbttTab = tab;
+  _cbttTu = ""; _cbttDen = "";
+  document.getElementById("cbtt_tu").value = "";
+  document.getElementById("cbtt_den").value = "";
+  document.querySelectorAll(".cbtt-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  renderCanhBaoTT();
+};
+
+// Cập nhật badge khi load xong dữ liệu
+function capNhatBadgeCanhBao() {
+  const today = todayStr();
+  let cnt = 0;
+  allHD.forEach(hd => {
+    (hd.banGiao||[]).forEach(bg => {
+      const tt = bg.trangThaiTT || "unpaid";
+      if (tt === "paid") return;
+      const tongBG = calcItemsTotal(bg.items||[]);
+      const daTT   = tt === "partial" ? (Number(bg.soTienDaTT)||0) : 0;
+      if (tongBG - daTT <= 0) return;
+      const hanTT  = cbttTinhHanTT(bg, hd);
+      const soNgay = cbttSoNgay(hanTT);
+      if (soNgay !== null && soNgay < 10) cnt++;
+    });
+  });
+  const badge = document.getElementById("badgeCanhBao");
+  if (cnt > 0) { badge.style.display=""; badge.textContent=cnt>99?"99+":cnt; }
+  else badge.style.display="none";
+}
 
 // ── XUẤT CSV ──
 window.xuatCSV=function(){
