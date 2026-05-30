@@ -876,7 +876,7 @@ const EMAIL_CO_QUYEN_XOA = [
 ];
 
 // ── STATE ──
-let allHD = [], currentHD = null, editMode = false, editSoHD = "";
+let allHD = [], currentHD = null, editMode = false, editSoHD = "", _editDocId = "";
 let hdItems = [], bgItems = [];
 let currentEditCTmaBG = "";
 let bgDateFilter = "";
@@ -888,6 +888,8 @@ let _editBGMode = false, _editBGmaBG = "";
 // Firestore document ID không cho phép dấu "/" → encode thành "__SL__"
 function safeId(s){ return String(s).replace(/\//g,"__SL__"); }
 function unsafeId(s){ return String(s).replace(/__SL__/g,"/"); }
+// Lấy Firestore docId của HĐ: dùng _docId nếu có (hỗ trợ trùng số HĐ), fallback safeId cũ
+function hdDocId(hd){ return hd._docId || safeId(hd.soHD); }
 
 // ── AUTH STATE ──
 onAuthStateChanged(auth, user => {
@@ -977,8 +979,9 @@ async function taiDuLieu() {
     allHD = [];
     snapHD.forEach(d => {
       const r = d.data();
-      const soHD = unsafeId(d.id); // decode "/" back from "__SL__"
+      const soHD = r.soHD || unsafeId(d.id); // ưu tiên field soHD, fallback decode docId cũ
       allHD.push({
+        _docId: d.id,                          // Firestore document ID thực sự
         soHD: soHD, ten: r.ten||"", nhaCungCap: r.nhaCungCap||"", maNCC: r.maNCC||"",
         soQDTrungThau: r.soQDTrungThau||"",
         ngayTrungThau: r.ngayTrungThau||"", ngayKy: r.ngayKy||"",
@@ -1422,7 +1425,7 @@ function renderTable() {
   document.getElementById("tbody").innerHTML = rows.map(hd => {
     const st = getStatusInfo(hd);
     const tv = calcTotal(hd.hangHoa||[]);
-    return `<tr onclick="moChiTiet('${hd.soHD}')" style="cursor:pointer">
+    return `<tr onclick="moChiTiet('${hd._docId||hd.soHD}')" style="cursor:pointer">
       <td style="font-weight:700;color:#1e40af;white-space:nowrap">${hd.soHD}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${hd.ten}">${hd.ten}</td>
       <td style="color:#64748b;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${hd.nhaCungCap}${hd.maNCC?' ['+hd.maNCC+']':''}">${hd.nhaCungCap}${hd.maNCC?'<br><span style="font-size:10px;color:#94a3b8">['+hd.maNCC+']</span>':''}</td>
@@ -1435,18 +1438,20 @@ function renderTable() {
       <td style="text-align:center"><span style="background:#f0fdf4;color:#22c55e;border-radius:20px;padding:2px 8px;font-weight:700;font-size:11px">${new Set((hd.banGiao||[]).map(bg=>bg.ngay)).size}</span></td>
       <td><span class="badge ${st.cls}">${st.lbl}</span></td>
       <td onclick="event.stopPropagation()">
-        <button class="btn btn-outline btn-sm" onclick="moFormSua('${hd.soHD}')">✏️</button> 
+        <button class="btn btn-outline btn-sm" onclick="moFormSua('${hd._docId||hd.soHD}')">✏️</button> 
         ${canDelete?`<button class="btn btn-danger btn-sm" onclick="xacNhanXoa('${hd.soHD}')">🗑️</button>`:`<span style="color:#d1d5db;font-size:18px;cursor:not-allowed;padding:2px 6px">🔒</span>`}
       </td></tr>`;
   }).join("");
 }
 
 // ── CHI TIẾT ──
-window.moChiTiet = function(soHD) {
+window.moChiTiet = function(docIdOrSoHD) {
+  // Tìm theo _docId trước (hỗ trợ trùng số HĐ), fallback tìm theo soHD
+  let hd = allHD.find(h=>h._docId===docIdOrSoHD) || allHD.find(h=>h.soHD===docIdOrSoHD);
+  if (!hd) return;
   try {
-  currentHD = allHD.find(h => h.soHD === soHD);
-  if (!currentHD) return;
-  const hd = currentHD, st = getStatusInfo(hd);
+  currentHD = hd;
+  const st = getStatusInfo(hd);
   const tv = calcTotal(hd.hangHoa||[]);
   const td = calcTongBanGiao(hd.banGiao||[]);
   const tt = calcTongThanhToan(hd.banGiao||[]);
@@ -1478,14 +1483,14 @@ window.moChiTiet = function(soHD) {
   const pf = document.getElementById("ct_progress");
   pf.style.width = pct+"%"; pf.style.background = pct>=100?"#22c55e":pct>=70?"#3b82f6":"#f59e0b";
   document.getElementById("ct_pct").textContent = pct+"%";
-  document.getElementById("btn_suaHD").onclick = () => { dongModal("modalCT"); moFormSua(hd.soHD); };
-  document.getElementById("btn_thanhLy").onclick = () => thanhLyHD(hd.soHD);
+  document.getElementById("btn_suaHD").onclick = () => { dongModal("modalCT"); moFormSua(hd._docId||hd.soHD); };
+  document.getElementById("btn_thanhLy").onclick = () => thanhLyHD(hd._docId||hd.soHD);
   document.getElementById("btn_thanhLy").style.display = hd.daThanhLy?"none":"";
   document.getElementById("btn_xoaHD_wrap").innerHTML = canDelete
-    ? `<button class="btn btn-danger btn-sm" onclick="xacNhanXoa('${hd.soHD}')">🗑️ Xoá</button>`
+    ? `<button class="btn btn-danger btn-sm" onclick="xacNhanXoa('${hd._docId||hd.soHD}')">🗑️ Xoá</button>`
     : `<span style="font-size:11px;color:#94a3b8;padding:5px 8px;background:#f1f5f9;border-radius:6px">🔒 Không có quyền xoá</span>`;
   doiTab("hh"); moModal("modalCT");
-  loadTaiLieu(hd.soHD); // tải badge tài liệu ngầm
+  loadTaiLieu(hd); // tải badge tài liệu ngầm
   } catch(e) { console.error("moChiTiet error:", e); showToast("Lỗi mở HĐ: " + e.message, "error"); }
 };
 
@@ -2763,7 +2768,7 @@ window.suaThongTinNhaThau = function() {
 window.luuThongTinNhaThau = async function() {
   const val = document.getElementById("nt_thongTin").value.trim();
   try {
-    await updateDoc(doc(db,"hopDong",safeId(currentHD.soHD)), { thongTinNhaThau: val });
+    await updateDoc(doc(db,"hopDong",hdDocId(currentHD)), { thongTinNhaThau: val });
     currentHD.thongTinNhaThau = val;
     const hdInAll = allHD.find(h=>h.soHD===currentHD.soHD);
     if (hdInAll) hdInAll.thongTinNhaThau = val;
@@ -2824,7 +2829,7 @@ window.luuGhiChu = async function() {
   const nt = document.getElementById("gc_nhaThau")?.value || currentHD.ghiChuNhaThau||"";
   const cdt = document.getElementById("gc_chuDauTu")?.value || currentHD.ghiChuChuDauTu||"";
   try {
-    await updateDoc(doc(db,"hopDong",safeId(currentHD.soHD)), { ghiChuNhaThau:nt, ghiChuChuDauTu:cdt });
+    await updateDoc(doc(db,"hopDong",hdDocId(currentHD)), { ghiChuNhaThau:nt, ghiChuChuDauTu:cdt });
     currentHD.ghiChuNhaThau = nt; currentHD.ghiChuChuDauTu = cdt;
     showToast("Đã lưu ghi chú!");
   } catch(e) { showToast("Lỗi: "+e.message,"error"); }
@@ -2841,9 +2846,11 @@ const TL_LOAI_OPTIONS = [
 
 let _tlData = [];   // cache tài liệu của HĐ hiện tại
 
-async function loadTaiLieu(soHD) {
+async function loadTaiLieu(hd) {
+  const soHD = typeof hd === "object" ? hd.soHD : hd;
+  const docId = typeof hd === "object" ? hdDocId(hd) : safeId(hd);
   try {
-    const snap = await getDocs(collection(db, "hopDong", safeId(soHD), "taiLieu"));
+    const snap = await getDocs(collection(db, "hopDong", docId, "taiLieu"));
     _tlData = snap.docs.map(d => ({id: d.id, ...d.data()}));
     _tlData.sort((a,b) => (a.thuTu||99) - (b.thuTu||99) || (a.tenLoai||"").localeCompare(b.tenLoai||""));
     // cập nhật badge
@@ -2856,7 +2863,7 @@ window.renderTabTL = async function() {
   const hd = currentHD;
   const el = document.getElementById("tc_tl");
   el.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8"><span class="loading"></span> Đang tải...</div>';
-  await loadTaiLieu(hd.soHD);
+  await loadTaiLieu(hd);
   rebuildTabTL();
 };
 
@@ -2960,11 +2967,11 @@ window.luuTaiLieu = async function() {
   const data = { tenLoai: loai, ten, link, updatedAt: serverTimestamp() };
   try {
     if (_tlEditId) {
-      await updateDoc(doc(db,"hopDong",safeId(soHD),"taiLieu",_tlEditId), data);
+      await updateDoc(doc(db,"hopDong",hdDocId(currentHD),"taiLieu",_tlEditId), data);
       showToast("Đã cập nhật tài liệu!");
     } else {
       data.thuTu = _tlData.length + 1;
-      await addDoc(collection(db,"hopDong",safeId(soHD),"taiLieu"), data);
+      await addDoc(collection(db,"hopDong",hdDocId(currentHD),"taiLieu"), data);
       showToast("Đã thêm tài liệu!");
     }
     huyFormTL();
@@ -3015,8 +3022,8 @@ window.xoaTaiLieu = async function(id) {
   if (!tl) return;
   if (!confirm(`Xoá tài liệu "${tl.tenLoai}${tl.ten ? ' – ' + tl.ten : ''}"?`)) return;
   try {
-    await deleteDoc(doc(db,"hopDong",safeId(currentHD.soHD),"taiLieu",id));
-    await loadTaiLieu(currentHD.soHD);
+    await deleteDoc(doc(db,"hopDong",hdDocId(currentHD),"taiLieu",id));
+    await loadTaiLieu(currentHD);
     rebuildTabTL();
     showToast("Đã xoá tài liệu!");
   } catch(e) { showToast("Lỗi: "+e.message,"error"); }
@@ -3221,7 +3228,7 @@ window.hideNCCSuggest = function() {
 };
 
 window.moFormThem = function() {
-  editMode=false; editSoHD=""; hdItems=[];
+  editMode=false; editSoHD=""; _editDocId=""; hdItems=[];
   document.getElementById("modalHDTitle").textContent="➕ Thêm hợp đồng mới";
   ["f_soHD","f_ten","f_ncc","f_maNCC","f_qdtt","f_ngayKy","f_ngayHH","f_ngayTT","f_soNgayTT","f_ghiChuNhaThau","f_ghiChuChuDauTu","f_thongTinNhaThau"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("f_soHD").disabled=false;
@@ -3229,9 +3236,11 @@ window.moFormThem = function() {
   document.getElementById("f_soHD").title="";
   renderHDItems(); moModal("modalHD");
 };
-window.moFormSua = function(soHD) {
-  const hd = allHD.find(h=>h.soHD===soHD); if(!hd) return;
-  editMode=true; editSoHD=soHD; hdItems=JSON.parse(JSON.stringify(hd.hangHoa||[])).map(it=>({
+window.moFormSua = function(docIdOrSoHD) {
+  const hd = allHD.find(h=>h._docId===docIdOrSoHD) || allHD.find(h=>h.soHD===docIdOrSoHD);
+  if(!hd) return;
+  const soHD = hd.soHD;
+  editMode=true; editSoHD=soHD; _editDocId=hd._docId||safeId(soHD); hdItems=JSON.parse(JSON.stringify(hd.hangHoa||[])).map(it=>({
     id:it.id, maThuoc:it.maThuoc||"", ten:it.ten, hoatChat:it.hoatChat||"",
     nongDo:it.nongDo||"", dangBaoShe:it.dangBaoShe||"", quyCach:it.quyCach||"",
     hanDung:it.hanDung||"", sdk:it.sdk||"", coSoSX:it.coSoSX||"",
@@ -3264,7 +3273,11 @@ window.themHangHoaHD = function() {
   document.getElementById("ni_tt_preview").textContent="0 đ";
   renderHDItems();
 };
-window.xoaHangHoaHDForm = function(idx){hdItems.splice(idx,1);renderHDItems();};
+window.xoaHangHoaHDForm = function(idx){
+  const it = hdItems[idx];
+  if (!confirm(`Bạn có chắc chắn muốn xóa mặt hàng "${it.ten||'này'}"?`)) return;
+  hdItems.splice(idx,1); renderHDItems();
+};
 function renderHDItems() {
   const wrap=document.getElementById("hdItemsWrap");
   if(!hdItems.length){wrap.innerHTML="";return;}
@@ -3323,28 +3336,28 @@ window.luuHopDong = async function() {
   const soHD=v("f_soHD"),ten=v("f_ten"),ngayHH=v("f_ngayHH");
   if(!soHD||!ten||!ngayHH){showToast("Điền đủ thông tin bắt buộc!","error");return;}
   setBtnLoading("btnSaveHD",true,"💾 Lưu hợp đồng");
-  const hdData={ten,nhaCungCap:v("f_ncc"),maNCC:v("f_maNCC"),soQDTrungThau:v("f_qdtt"),ngayTrungThau:v("f_ngayTT"),ngayKy:v("f_ngayKy"),ngayHetHan:ngayHH,daThanhLy:editMode?(allHD.find(h=>h.soHD===editSoHD)?.daThanhLy||false):false,ngayThanhLy:"",soNgayThanhToan:Number(v("f_soNgayTT"))||0,ghiChuNhaThau:v("f_ghiChuNhaThau"),ghiChuChuDauTu:v("f_ghiChuChuDauTu"),thongTinNhaThau:v("f_thongTinNhaThau"),updatedAt:serverTimestamp()};
+  const hdData={soHD,ten,nhaCungCap:v("f_ncc"),maNCC:v("f_maNCC"),soQDTrungThau:v("f_qdtt"),ngayTrungThau:v("f_ngayTT"),ngayKy:v("f_ngayKy"),ngayHetHan:ngayHH,daThanhLy:editMode?(allHD.find(h=>h._docId===_editDocId)?.daThanhLy||false):false,ngayThanhLy:"",soNgayThanhToan:Number(v("f_soNgayTT"))||0,ghiChuNhaThau:v("f_ghiChuNhaThau"),ghiChuChuDauTu:v("f_ghiChuChuDauTu"),thongTinNhaThau:v("f_thongTinNhaThau"),updatedAt:serverTimestamp()};
   try {
     const batch = writeBatch(db);
-    const soHDChanged = editMode && soHD !== editSoHD;
-    // Nếu đổi số HĐ → xóa document cũ
-    if (soHDChanged) {
-      batch.delete(doc(db,"hopDong",safeId(editSoHD)));
-    }
-    // Lưu HĐ mới/cập nhật
-    batch.set(doc(db,"hopDong",safeId(soHD)), hdData, {merge:true});
-    // Xóa HH cũ
     if (editMode) {
-      const oldSoHD = soHDChanged ? editSoHD : soHD;
-      const snapHH = await getDocs(query(collection(db,"hangHoa"),where("soHD","==",oldSoHD)));
-      snapHH.forEach(d => batch.delete(d.ref));
-      // Nếu đổi số HĐ → cập nhật soHD trong banGiao và banGiaoHangHoa
-      if (soHDChanged) {
-        const snapBG = await getDocs(query(collection(db,"banGiao"),where("soHD","==",editSoHD)));
+      // Cập nhật document cũ (giữ nguyên docId, chỉ đổi data)
+      batch.set(doc(db,"hopDong",_editDocId), hdData, {merge:true});
+      // Nếu đổi số HĐ → cập nhật soHD trong banGiao/banGiaoHangHoa/hangHoa
+      if (soHD !== editSoHD) {
+        const snapHH  = await getDocs(query(collection(db,"hangHoa"),where("soHD","==",editSoHD)));
+        snapHH.forEach(d => batch.update(d.ref, {soHD}));
+        const snapBG  = await getDocs(query(collection(db,"banGiao"),where("soHD","==",editSoHD)));
         snapBG.forEach(d => batch.update(d.ref, {soHD}));
-        const snapBGHH = await getDocs(query(collection(db,"banGiaoHangHoa"),where("soHD","==",editSoHD)));
+        const snapBGHH= await getDocs(query(collection(db,"banGiaoHangHoa"),where("soHD","==",editSoHD)));
         snapBGHH.forEach(d => batch.update(d.ref, {soHD}));
       }
+      // Xóa HH cũ (soHD có thể đã được cập nhật trên nếu đổi số)
+      const snapHHDel = await getDocs(query(collection(db,"hangHoa"),where("soHD","==",soHD)));
+      snapHHDel.forEach(d => batch.delete(d.ref));
+    } else {
+      // Thêm mới: dùng addDoc → auto-generated ID, không bao giờ ghi đè
+      const newRef = doc(collection(db,"hopDong"));
+      batch.set(newRef, hdData);
     }
     // Lưu HH mới
     hdItems.forEach(it => {
@@ -3360,11 +3373,15 @@ window.luuHopDong = async function() {
 };
 
 // ── XOÁ / THANH LÝ ──
-window.xacNhanXoa = async function(soHD) {
+window.xacNhanXoa = async function(docIdOrSoHD) {
+  const hd = allHD.find(h=>h._docId===docIdOrSoHD) || allHD.find(h=>h.soHD===docIdOrSoHD);
+  if (!hd) return;
+  const soHD = hd.soHD;
+  const docId = hd._docId || safeId(soHD);
   if(!confirm(`Xoá hợp đồng ${soHD}?\nDữ liệu bàn giao cũng bị xoá.`)) return;
   try {
     const batch = writeBatch(db);
-    batch.delete(doc(db,"hopDong",safeId(soHD)));
+    batch.delete(doc(db,"hopDong",docId));
     const [snapHH,snapBG] = await Promise.all([
       getDocs(query(collection(db,"hangHoa"),where("soHD","==",soHD))),
       getDocs(query(collection(db,"banGiao"),where("soHD","==",soHD)))
@@ -3382,13 +3399,17 @@ window.xacNhanXoa = async function(soHD) {
     dongModal("modalCT"); await taiDuLieu();
   } catch(e){showToast("Lỗi: "+e.message,"error");}
 };
-window.thanhLyHD = async function(soHD) {
+window.thanhLyHD = async function(docIdOrSoHD) {
+  const hd = allHD.find(h=>h._docId===docIdOrSoHD) || allHD.find(h=>h.soHD===docIdOrSoHD);
+  if (!hd) return;
+  const soHD = hd.soHD;
+  const docId = hd._docId || safeId(soHD);
   if(!confirm(`Thanh lý hợp đồng ${soHD}?`)) return;
   try {
-    await updateDoc(doc(db,"hopDong",safeId(soHD)),{daThanhLy:true,ngayThanhLy:todayStr(),trangThai:"Da thanh ly"});
+    await updateDoc(doc(db,"hopDong",docId),{daThanhLy:true,ngayThanhLy:todayStr(),trangThai:"Da thanh ly"});
     showToast("Thanh lý thành công!");
     await taiDuLieu();
-    if(currentHD) moChiTiet(currentHD.soHD);
+    if(currentHD) moChiTiet(currentHD._docId||currentHD.soHD);
   } catch(e){showToast("Lỗi: "+e.message,"error");}
 };
 
@@ -3491,6 +3512,7 @@ window.themHangHoaBG=function(){
 };
 window.xoaBGItem=function(idx){
   const it=bgItems[idx];
+  if (!confirm(`Bạn có chắc chắn muốn xóa "${it.ten||'mặt hàng này'}" khỏi đợt bàn giao?`)) return;
   if(it.itemId){const chip=document.getElementById("chip_"+it.itemId);if(chip)chip.className="chip";}
   bgItems.splice(idx,1);renderBGItems();kiemTraVuotRealtime();
 };
