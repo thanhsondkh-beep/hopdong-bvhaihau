@@ -381,6 +381,7 @@ th{position:relative;}
       <button class="tab" id="tab_nt" onclick="doiTab('nt')">🏢 Nhà thầu</button>
       <button class="tab" id="tab_bc" onclick="doiTab('bc')">📄 Báo cáo</button>
       <button class="tab" id="tab_gc" onclick="doiTab('gc')">📝 Ghi chú</button>
+      <button class="tab" id="tab_tl" onclick="doiTab('tl')" style="position:relative">📎 Tài liệu<span id="badge_tl" style="display:none;position:absolute;top:-4px;right:-4px;background:#3b82f6;color:#fff;border-radius:50%;width:15px;height:15px;font-size:9px;font-weight:800;line-height:15px;text-align:center"></span></button>
     </div>
     <div class="tab-content">
       <div id="tc_hh"></div>
@@ -389,6 +390,7 @@ th{position:relative;}
       <div id="tc_nt" style="display:none"></div>
       <div id="tc_bc" style="display:none"></div>
       <div id="tc_gc" style="display:none"></div>
+      <div id="tc_tl" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -1483,12 +1485,13 @@ window.moChiTiet = function(soHD) {
     ? `<button class="btn btn-danger btn-sm" onclick="xacNhanXoa('${hd.soHD}')">🗑️ Xoá</button>`
     : `<span style="font-size:11px;color:#94a3b8;padding:5px 8px;background:#f1f5f9;border-radius:6px">🔒 Không có quyền xoá</span>`;
   doiTab("hh"); moModal("modalCT");
+  loadTaiLieu(hd.soHD); // tải badge tài liệu ngầm
   } catch(e) { console.error("moChiTiet error:", e); showToast("Lỗi mở HĐ: " + e.message, "error"); }
 };
 
 window.doiTab = function(tab) {
   currentTab = tab;
-  ["hh","bg","con","nt","bc","gc"].forEach(t => {
+  ["hh","bg","con","nt","bc","gc","tl"].forEach(t => {
     document.getElementById("tc_"+t).style.display = t===tab?"block":"none";
     document.getElementById("tab_"+t).className = "tab"+(t===tab?" active":"");
   });
@@ -1498,6 +1501,7 @@ window.doiTab = function(tab) {
   if (tab==="nt") renderTabNT();
   if (tab==="bc") renderTabBC();
   if (tab==="gc") renderTabGC();
+  if (tab==="tl") renderTabTL();
 };
 
 function renderTabNT() {
@@ -2826,7 +2830,199 @@ window.luuGhiChu = async function() {
   } catch(e) { showToast("Lỗi: "+e.message,"error"); }
 };
 
-// ── TAB BÀN GIAO ──
+// ── TAB TÀI LIỆU / LINK SCAN ──
+// Lưu vào subcollection: hopDong/{soHD}/taiLieu/{id}
+
+const TL_LOAI_OPTIONS = [
+  "Hợp đồng","Phụ lục hợp đồng","QĐ trúng thầu","Biên bản bàn giao",
+  "Hóa đơn","Phiếu nhập kho","Biên bản nghiệm thu","Chứng từ thanh toán",
+  "Bảo lãnh thực hiện HĐ","Bảo lãnh tạm ứng","Văn bản khác"
+];
+
+let _tlData = [];   // cache tài liệu của HĐ hiện tại
+
+async function loadTaiLieu(soHD) {
+  try {
+    const snap = await getDocs(collection(db, "hopDong", safeId(soHD), "taiLieu"));
+    _tlData = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    _tlData.sort((a,b) => (a.thuTu||99) - (b.thuTu||99) || (a.tenLoai||"").localeCompare(b.tenLoai||""));
+    // cập nhật badge
+    const badge = document.getElementById("badge_tl");
+    if (badge) { badge.style.display = _tlData.length ? "" : "none"; badge.textContent = _tlData.length; }
+  } catch(e) { _tlData = []; }
+}
+
+window.renderTabTL = async function() {
+  const hd = currentHD;
+  const el = document.getElementById("tc_tl");
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8"><span class="loading"></span> Đang tải...</div>';
+  await loadTaiLieu(hd.soHD);
+  rebuildTabTL();
+};
+
+function rebuildTabTL() {
+  const hd = currentHD;
+  const canEdit = !hd.daThanhLy;
+  const el = document.getElementById("tc_tl");
+
+  const formHtml = canEdit ? `
+  <div id="tl_form" style="background:#f0f9ff;border:1.5px solid #7dd3fc;border-radius:12px;padding:14px;margin-bottom:14px">
+    <div style="font-size:12px;font-weight:800;color:#0369a1;margin-bottom:10px" id="tl_form_title">➕ Thêm tài liệu / link mới</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:8px;align-items:end">
+      <div>
+        <div style="font-size:10px;color:#64748b;margin-bottom:3px">Loại tài liệu *</div>
+        <select id="tl_loai" style="font-size:12px" onchange="tlKiemTraLoaiKhac()">
+          ${TL_LOAI_OPTIONS.map(o=>`<option>${o}</option>`).join("")}
+          <option value="__khac__">✏️ Nhập loại khác...</option>
+        </select>
+        <input id="tl_loai_custom" placeholder="Nhập tên loại tài liệu..." style="font-size:12px;margin-top:5px;display:none;border:1.5px solid #3b82f6;background:#fff">
+      </div>
+      <div>
+        <div style="font-size:10px;color:#64748b;margin-bottom:3px">Tên / Mô tả</div>
+        <input id="tl_ten" placeholder="VD: Phụ lục số 01, HĐ gốc..." style="font-size:12px">
+      </div>
+      <div>
+        <div style="font-size:10px;color:#64748b;margin-bottom:3px">Link Google Drive / URL *</div>
+        <input id="tl_link" placeholder="https://drive.google.com/..." style="font-size:12px">
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="luuTaiLieu()" style="white-space:nowrap">💾 Lưu</button>
+        <button class="btn btn-sm" id="tl_btn_huy" onclick="huyFormTL()" style="display:none;background:#f1f5f9;color:#374151">✕</button>
+      </div>
+    </div>
+  </div>` : "";
+
+  const rows = _tlData.map((tl, idx) => {
+    const icon = {"Hợp đồng":"📄","Phụ lục hợp đồng":"📑","QĐ trúng thầu":"🏆","Biên bản bàn giao":"📦",
+      "Hóa đơn":"🧾","Phiếu nhập kho":"📋","Biên bản nghiệm thu":"✅","Chứng từ thanh toán":"💳",
+      "Bảo lãnh thực hiện HĐ":"🔒","Bảo lãnh tạm ứng":"🔐","Văn bản khác":"📎"}[tl.tenLoai] || "📎";
+    const editBtns = canEdit ? `
+      <button class="btn btn-sm" style="background:#fef9c3;color:#b45309;border:1px solid #fde047;padding:3px 8px" onclick="suaTaiLieu('${tl.id}')" title="Sửa">✏️</button>
+      <button class="btn btn-sm" style="background:#fee2e2;color:#ef4444;border:1px solid #fca5a5;padding:3px 8px" onclick="xoaTaiLieu('${tl.id}')" title="Xoá">🗑️</button>` : "";
+    return `<tr style="background:${idx%2===0?'#fff':'#f8fafc'}">
+      <td style="padding:8px 10px;font-size:11px;color:#94a3b8;text-align:center">${idx+1}</td>
+      <td style="padding:8px 10px;white-space:nowrap">
+        <span style="background:#eff6ff;color:#1e40af;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">${icon} ${tl.tenLoai||"—"}</span>
+      </td>
+      <td style="padding:8px 10px;font-size:12px;color:#374151">${tl.ten||'<span style="color:#94a3b8;font-style:italic">Không có</span>'}</td>
+      <td style="padding:8px 10px">
+        ${tl.link ? `<a href="${tl.link}" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:5px;background:#f0fdf4;color:#166534;border:1px solid #86efac;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;text-decoration:none;transition:opacity .15s"
+          onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
+          <span style="font-size:14px">🔗</span> Mở tài liệu
+        </a>` : '<span style="color:#94a3b8;font-size:11px">Chưa có link</span>'}
+      </td>
+      <td style="padding:8px 10px;text-align:right;white-space:nowrap">${editBtns}</td>
+    </tr>`;
+  }).join("");
+
+  el.innerHTML = formHtml + `
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
+    <div style="background:#1e3a8a;color:#fff;padding:9px 12px;font-size:12px;font-weight:700">📎 Danh sách tài liệu – ${hd.soHD} <span style="font-weight:400;opacity:.8">(${_tlData.length} tài liệu)</span></div>
+    ${_tlData.length ? `
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#f1f5f9;font-size:11px">
+        <th style="padding:7px 10px;width:32px">#</th>
+        <th style="padding:7px 10px;text-align:left">Loại tài liệu</th>
+        <th style="padding:7px 10px;text-align:left">Tên / Mô tả</th>
+        <th style="padding:7px 10px;text-align:left">Link</th>
+        <th style="padding:7px 10px;width:80px"></th>
+      </thead><tbody>${rows}</tbody>
+    </table>` : '<div style="text-align:center;padding:30px;color:#94a3b8;font-size:12px">📭 Chưa có tài liệu nào. Nhấn <b>Thêm</b> để gắn link scan.</div>'}
+  </div>`;
+}
+
+let _tlEditId = null;
+
+window.tlKiemTraLoaiKhac = function() {
+  const sel  = document.getElementById("tl_loai");
+  const cust = document.getElementById("tl_loai_custom");
+  if (!sel || !cust) return;
+  if (sel.value === "__khac__") {
+    cust.style.display = "";
+    cust.focus();
+  } else {
+    cust.style.display = "none";
+    cust.value = "";
+  }
+};
+
+window.luuTaiLieu = async function() {
+  const sel  = document.getElementById("tl_loai").value;
+  const loai = sel === "__khac__"
+    ? (document.getElementById("tl_loai_custom").value.trim())
+    : sel;
+  if (!loai) { showToast("Vui lòng nhập loại tài liệu!","error"); return; }
+  const ten  = document.getElementById("tl_ten").value.trim();
+  const link = document.getElementById("tl_link").value.trim();
+  if (!link) { showToast("Vui lòng nhập link tài liệu!","error"); return; }
+  const soHD = currentHD.soHD;
+  const data = { tenLoai: loai, ten, link, updatedAt: serverTimestamp() };
+  try {
+    if (_tlEditId) {
+      await updateDoc(doc(db,"hopDong",safeId(soHD),"taiLieu",_tlEditId), data);
+      showToast("Đã cập nhật tài liệu!");
+    } else {
+      data.thuTu = _tlData.length + 1;
+      await addDoc(collection(db,"hopDong",safeId(soHD),"taiLieu"), data);
+      showToast("Đã thêm tài liệu!");
+    }
+    huyFormTL();
+    await loadTaiLieu(soHD);
+    rebuildTabTL();
+  } catch(e) { showToast("Lỗi: "+e.message,"error"); }
+};
+
+window.suaTaiLieu = function(id) {
+  const tl = _tlData.find(t => t.id === id);
+  if (!tl) return;
+  _tlEditId = id;
+  const idx = TL_LOAI_OPTIONS.indexOf(tl.tenLoai);
+  if (idx >= 0) {
+    document.getElementById("tl_loai").selectedIndex = idx;
+    const cust = document.getElementById("tl_loai_custom");
+    if (cust) { cust.style.display="none"; cust.value=""; }
+  } else {
+    // loại tùy chỉnh
+    const sel = document.getElementById("tl_loai");
+    sel.value = "__khac__";
+    const cust = document.getElementById("tl_loai_custom");
+    if (cust) { cust.style.display=""; cust.value = tl.tenLoai||""; }
+  }
+  document.getElementById("tl_ten").value  = tl.ten  || "";
+  document.getElementById("tl_link").value = tl.link || "";
+  document.getElementById("tl_form_title").textContent = "✏️ Sửa tài liệu";
+  document.getElementById("tl_btn_huy").style.display = "";
+  document.getElementById("tl_ten").focus();
+};
+
+window.huyFormTL = function() {
+  _tlEditId = null;
+  ["tl_loai","tl_ten","tl_link"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.tagName === "SELECT" ? el.selectedIndex = 0 : el.value = ""; }
+  });
+  const cust = document.getElementById("tl_loai_custom");
+  if (cust) { cust.style.display="none"; cust.value=""; }
+  const ft = document.getElementById("tl_form_title");
+  if (ft) ft.textContent = "➕ Thêm tài liệu / link mới";
+  const bh = document.getElementById("tl_btn_huy");
+  if (bh) bh.style.display = "none";
+};
+
+window.xoaTaiLieu = async function(id) {
+  const tl = _tlData.find(t => t.id === id);
+  if (!tl) return;
+  if (!confirm(`Xoá tài liệu "${tl.tenLoai}${tl.ten ? ' – ' + tl.ten : ''}"?`)) return;
+  try {
+    await deleteDoc(doc(db,"hopDong",safeId(currentHD.soHD),"taiLieu",id));
+    await loadTaiLieu(currentHD.soHD);
+    rebuildTabTL();
+    showToast("Đã xoá tài liệu!");
+  } catch(e) { showToast("Lỗi: "+e.message,"error"); }
+};
+
+
 function renderTabBG() {
   const hd = currentHD;
   const td = calcTongBanGiao(hd.banGiao||[]);
