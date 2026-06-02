@@ -246,6 +246,15 @@ th{position:relative;}
         <option value="Hết hạn">Hết hạn</option>
         <option value="Đã thanh lý">Đã thanh lý</option>
       </select>
+      <select id="filterBoPhan" onchange="applyFilters()" style="width:auto;min-width:160px">
+        <option value="">Tất cả bộ phận</option>
+        <option value="Khoa Dược">Khoa Dược</option>
+        <option value="Nhà Thuốc">Nhà Thuốc</option>
+        <option value="Tài chính KT">Tài chính KT</option>
+        <option value="KHTH">KHTH</option>
+        <option value="HCTC">HCTC</option>
+        <option value="__khac__">Khác / Chưa phân</option>
+      </select>
     </div>
     <div class="card" style="padding:0">
       <div class="table-wrap">
@@ -281,7 +290,7 @@ th{position:relative;}
     <div class="section">
       <div class="section-title">Thông tin chung</div>
       <div class="grid2">
-        <div class="field full"><label>Số hợp đồng *</label><input id="f_soHD" placeholder="HD-2025-001"></div>
+        <div class="field full"><label>Số hợp đồng <span style="color:#ef4444">*</span> <span style="font-size:10px;color:#94a3b8;font-weight:400">(bắt buộc)</span></label><input id="f_soHD" placeholder="VD: 01-2026/HĐMB/BVĐKHH-BB" required oninput="this.style.borderColor=this.value.trim()?(this.value.trim().toLowerCase()==='chưa có'||this.value.trim().toLowerCase()==='chua co'?"#ef4444":'#22c55e'):'#ef4444'" style="border-color:#e2e8f0"></div>
         <div class="field"><label>Ngày ký</label><input type="date" id="f_ngayKy"></div>
         <div class="field"><label>Ngày hết hạn *</label><input type="date" id="f_ngayHH"></div>
         <div class="field full"><label>Tên hợp đồng *</label><input id="f_ten" placeholder="Cung cấp vật tư..."></div>
@@ -290,6 +299,16 @@ th{position:relative;}
           <div id="ncc_suggest" style="display:none;position:absolute;z-index:999;background:#fff;border:1.5px solid #bfdbfe;border-radius:8px;max-height:180px;overflow-y:auto;box-shadow:0 4px 16px #0002;min-width:280px;font-size:12px"></div>
         </div>
         <div class="field"><label>Mã nhà cung cấp</label><input id="f_maNCC" placeholder="VD: NCC-001..."></div>
+        <div class="field"><label>Bộ phận thực hiện</label>
+          <input id="f_boPhan" list="boPhan_list" placeholder="Chọn hoặc nhập bộ phận..." autocomplete="off">
+          <datalist id="boPhan_list">
+            <option value="Khoa Dược">
+            <option value="Nhà Thuốc">
+            <option value="Tài chính KT">
+            <option value="KHTH">
+            <option value="HCTC">
+          </datalist>
+        </div>
         <div class="field full"><label>Thông tin chi tiết nhà thầu</label><textarea id="f_thongTinNhaThau" rows="3" placeholder="Địa chỉ, MST, SĐT, người đại diện, tài khoản ngân hàng..." style="width:100%;resize:vertical;font-size:12px;border-radius:7px;border:1px solid #e2e8f0;padding:8px;outline:none;font-family:inherit;background:#fff" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea></div>
         <div class="field"><label>⏱ Số ngày thanh toán</label><input type="number" id="f_soNgayTT" placeholder="VD: 30" min="0" style="text-align:right"><div style="font-size:10px;color:#94a3b8;margin-top:3px">Hạn TT = Ngày BG + số ngày - 1</div></div>
       </div>
@@ -979,10 +998,11 @@ async function taiDuLieu() {
     allHD = [];
     snapHD.forEach(d => {
       const r = d.data();
-      const soHD = r.soHD || unsafeId(d.id); // ưu tiên field soHD, fallback decode docId cũ
+      // Ưu tiên field soHD trong document (HĐ mới), fallback decode từ docId (HĐ cũ chưa có field soHD)
+      const soHD = r.soHD || unsafeId(d.id);
       allHD.push({
-        _docId: d.id,                          // Firestore document ID thực sự
-        soHD: soHD, ten: r.ten||"", nhaCungCap: r.nhaCungCap||"", maNCC: r.maNCC||"",
+        _docId: d.id,
+        soHD: soHD, ten: r.ten||"", nhaCungCap: r.nhaCungCap||"", maNCC: r.maNCC||"", boPhan: r.boPhan||"",
         soQDTrungThau: r.soQDTrungThau||"",
         ngayTrungThau: r.ngayTrungThau||"", ngayKy: r.ngayKy||"",
         ngayHetHan: r.ngayHetHan||"", trangThai: r.trangThai||"",
@@ -990,8 +1010,8 @@ async function taiDuLieu() {
         soNgayThanhToan: r.soNgayThanhToan||0,
         ghiChuNhaThau: r.ghiChuNhaThau||"", ghiChuChuDauTu: r.ghiChuChuDauTu||"",
         thongTinNhaThau: r.thongTinNhaThau||"",
-        hangHoa: hhMap[soHD] || [],
-        banGiao: bgMap[soHD] || []
+        hangHoa: hhMap[soHD] || hhMap[unsafeId(d.id)] || [],
+        banGiao: bgMap[soHD] || bgMap[unsafeId(d.id)] || []
       });
     });
 
@@ -1081,9 +1101,18 @@ function renderTableHeader() {
 function getFilteredRows(excludeKey) {
   const q  = (document.getElementById("search").value||"").toLowerCase();
   const st = document.getElementById("filterStatus").value;
+  const bp = document.getElementById("filterBoPhan").value;
   return allHD.filter(hd => {
     if (q && !(hd.soHD.toLowerCase().includes(q)||hd.ten.toLowerCase().includes(q)||hd.nhaCungCap.toLowerCase().includes(q)||(hd.soQDTrungThau||"").toLowerCase().includes(q))) return false;
     if (st && getStatusInfo(hd).lbl !== st) return false;
+    if (bp) {
+      if (bp === "__khac__") {
+        const known = ["Khoa Dược","Nhà Thuốc","Tài chính KT","KHTH","HCTC"];
+        if (known.includes(hd.boPhan)) return false;
+      } else {
+        if (hd.boPhan !== bp) return false;
+      }
+    }
     for (const col of COLS) {
       if (!col.filterable || col.key===excludeKey || !colFilters[col.key]) continue;
       const v = String(getColValue(hd, col.key)||"---");
@@ -1127,6 +1156,7 @@ window.xoaTatCaLocCot = function() {
   COLS.forEach(col => colFilters[col.key]=null);
   document.getElementById("search").value="";
   document.getElementById("filterStatus").value="";
+  document.getElementById("filterBoPhan").value="";
   applyFilters();
 };
 
@@ -1462,7 +1492,7 @@ window.moChiTiet = function(docIdOrSoHD) {
   document.getElementById("ct_soHD").textContent = hd.soHD;
   document.getElementById("ct_badge").innerHTML = `<span class="badge ${st.cls}">${st.lbl}</span>`;
   document.getElementById("ct_ten").textContent = hd.ten;
-  document.getElementById("ct_ncc").textContent = "🏢 " + hd.nhaCungCap;
+  document.getElementById("ct_ncc").innerHTML = "🏢 " + (hd.nhaCungCap||"---") + (hd.boPhan ? `&nbsp;<span style="background:#eff6ff;color:#1e40af;border-radius:20px;padding:1px 9px;font-size:11px;font-weight:700">🏥 ${hd.boPhan}</span>` : "");
   document.getElementById("ct_ncc").title = hd.thongTinNhaThau||"";
   const soDotBG = new Set((hd.banGiao||[]).map(bg=>bg.ngay)).size;
   document.getElementById("ct_infoGrid").innerHTML = [
@@ -1517,6 +1547,10 @@ function renderTabNT() {
     <div style="background:#f0f9ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:14px">
       <div style="font-size:11px;color:#64748b;margin-bottom:4px">Tên nhà thầu</div>
       <div style="font-weight:700;font-size:15px;color:#1e40af">${hd.nhaCungCap||'---'}</div>
+    </div>
+    <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:14px">
+      <div style="font-size:11px;color:#64748b;margin-bottom:4px">Bộ phận thực hiện</div>
+      <div style="font-weight:700;font-size:15px;color:#166534">${hd.boPhan||'<span style="color:#94a3b8;font-weight:400;font-size:13px">Chưa phân</span>'}</div>
     </div>
     <div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:12px;padding:14px">
       <div style="font-size:11px;color:#64748b;margin-bottom:4px">Quyết định trúng thầu</div>
@@ -3230,9 +3264,10 @@ window.hideNCCSuggest = function() {
 window.moFormThem = function() {
   editMode=false; editSoHD=""; _editDocId=""; hdItems=[];
   document.getElementById("modalHDTitle").textContent="➕ Thêm hợp đồng mới";
-  ["f_soHD","f_ten","f_ncc","f_maNCC","f_qdtt","f_ngayKy","f_ngayHH","f_ngayTT","f_soNgayTT","f_ghiChuNhaThau","f_ghiChuChuDauTu","f_thongTinNhaThau"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  ["f_soHD","f_ten","f_ncc","f_maNCC","f_boPhan","f_qdtt","f_ngayKy","f_ngayHH","f_ngayTT","f_soNgayTT","f_ghiChuNhaThau","f_ghiChuChuDauTu","f_thongTinNhaThau"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("f_soHD").disabled=false;
   document.getElementById("f_soHD").style.background="";
+  document.getElementById("f_soHD").style.borderColor="#e2e8f0";
   document.getElementById("f_soHD").title="";
   renderHDItems(); moModal("modalHD");
 };
@@ -3248,7 +3283,7 @@ window.moFormSua = function(docIdOrSoHD) {
     tongDC:it.tongDC||0
   }));
   document.getElementById("modalHDTitle").textContent="✏️ Chỉnh sửa hợp đồng";
-  document.getElementById("f_soHD").value=hd.soHD; document.getElementById("f_soHD").disabled=false; document.getElementById("f_soHD").style.background="#fffbeb"; document.getElementById("f_soHD").title="⚠️ Thay đổi số HĐ sẽ tạo document mới trên Firestore";
+  document.getElementById("f_boPhan").value=hd.boPhan||""; document.getElementById("f_soHD").value=hd.soHD; document.getElementById("f_soHD").disabled=false; document.getElementById("f_soHD").style.background="#fffbeb"; document.getElementById("f_soHD").style.borderColor=hd.soHD?"#22c55e":"#ef4444"; document.getElementById("f_soHD").title="⚠️ Thay đổi số HĐ sẽ tạo document mới trên Firestore";
   document.getElementById("f_ten").value=hd.ten||""; document.getElementById("f_ncc").value=hd.nhaCungCap||"";
   document.getElementById("f_maNCC").value=hd.maNCC||"";
   document.getElementById("f_qdtt").value=hd.soQDTrungThau||""; document.getElementById("f_ngayKy").value=hd.ngayKy||"";
@@ -3334,9 +3369,16 @@ function renderHDItems() {
 }
 window.luuHopDong = async function() {
   const soHD=v("f_soHD"),ten=v("f_ten"),ngayHH=v("f_ngayHH");
-  if(!soHD||!ten||!ngayHH){showToast("Điền đủ thông tin bắt buộc!","error");return;}
+  const soHDInvalid = !soHD || soHD.toLowerCase()==="chưa có" || soHD.toLowerCase()==="chua co" || soHD==="---";
+  if(soHDInvalid){
+    showToast("⚠️ Vui lòng nhập số hợp đồng hợp lệ!","error");
+    const el=document.getElementById("f_soHD");
+    if(el){el.style.borderColor="#ef4444";el.focus();el.select();}
+    return;
+  }
+  if(!ten||!ngayHH){showToast("Điền đủ thông tin bắt buộc!","error");return;}
   setBtnLoading("btnSaveHD",true,"💾 Lưu hợp đồng");
-  const hdData={soHD,ten,nhaCungCap:v("f_ncc"),maNCC:v("f_maNCC"),soQDTrungThau:v("f_qdtt"),ngayTrungThau:v("f_ngayTT"),ngayKy:v("f_ngayKy"),ngayHetHan:ngayHH,daThanhLy:editMode?(allHD.find(h=>h._docId===_editDocId)?.daThanhLy||false):false,ngayThanhLy:"",soNgayThanhToan:Number(v("f_soNgayTT"))||0,ghiChuNhaThau:v("f_ghiChuNhaThau"),ghiChuChuDauTu:v("f_ghiChuChuDauTu"),thongTinNhaThau:v("f_thongTinNhaThau"),updatedAt:serverTimestamp()};
+  const hdData={soHD,ten,nhaCungCap:v("f_ncc"),maNCC:v("f_maNCC"),boPhan:v("f_boPhan"),soQDTrungThau:v("f_qdtt"),ngayTrungThau:v("f_ngayTT"),ngayKy:v("f_ngayKy"),ngayHetHan:ngayHH,daThanhLy:editMode?(allHD.find(h=>h._docId===_editDocId)?.daThanhLy||false):false,ngayThanhLy:"",soNgayThanhToan:Number(v("f_soNgayTT"))||0,ghiChuNhaThau:v("f_ghiChuNhaThau"),ghiChuChuDauTu:v("f_ghiChuChuDauTu"),thongTinNhaThau:v("f_thongTinNhaThau"),updatedAt:serverTimestamp()};
   try {
     const batch = writeBatch(db);
     if (editMode) {
@@ -4001,6 +4043,7 @@ window.batDauImport = async function() {
 
       // 1. Hợp đồng
       batch.set(doc(db,"hopDong",safeId(soHD)), {
+        boPhan: row["Bộ phận"] || "",
         ten: hd.ten||"", nhaCungCap: hd.nhaCungCap||"",
         soQDTrungThau: hd.soQDTrungThau||"",
         ngayTrungThau: hd.ngayTrungThau||"", ngayKy: hd.ngayKy||"",
