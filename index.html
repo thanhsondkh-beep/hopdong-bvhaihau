@@ -319,7 +319,7 @@ th{position:relative;}
           </datalist>
         </div>
         <div class="field"><label>Loại hợp đồng</label>
-          <input id="f_loaiHD" list="loaiHD_list" placeholder="Chọn hoặc nhập loại HĐ..." autocomplete="off">
+          <input id="f_loaiHD" list="loaiHD_list" placeholder="Chọn hoặc nhập loại HĐ..." autocomplete="off" oninput="renderHDItems()" onchange="renderHDItems()">
           <datalist id="loaiHD_list">
             <option value="Thuốc">
             <option value="VTYT">
@@ -348,30 +348,7 @@ th{position:relative;}
         </div>
       </div>
       <div id="hdItemsWrap"></div>
-      <div style="background:#f0f9ff;border-radius:9px;padding:12px;border:1px dashed #93c5fd;margin-top:8px">
-        <div style="font-size:11px;color:#3b82f6;font-weight:700;margin-bottom:9px">➕ Thêm hàng hóa <span style="color:#94a3b8;font-weight:400">(* bắt buộc)</span></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-bottom:7px">
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Mã thuốc</div><input id="ni_ma" placeholder="VD: 001..."></div>
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên thuốc *</div><input id="ni_ten" placeholder="Tên thuốc..."></div>
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên hoạt chất / Thành phần</div><input id="ni_hoatchat" placeholder="Hoạt chất..."></div>
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Nồng độ, hàm lượng</div><input id="ni_nongdo" placeholder="VD: 500mg..."></div>
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Dạng bào chế</div><input id="ni_dbc" placeholder="Viên nén, Tiêm..."></div>
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Quy cách đóng gói</div><input id="ni_quycach" placeholder="Hộp 10 vỉ x 10 viên..."></div>
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Hạn dùng (tháng)</div><input type="number" id="ni_handung" placeholder="24" style="text-align:right"></div>
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">GĐKLH / GPNK</div><input id="ni_sdk" placeholder="VD: VD-12345-10..."></div>
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Cơ sở sản xuất</div><input id="ni_cssx" placeholder="Tên công ty SX..."></div>
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Nước sản xuất</div><input id="ni_nuoc" placeholder="Việt Nam..."></div>
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn vị tính *</div><input id="ni_dvt" placeholder="Hộp, Viên..."></div>
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Số lượng *</div><input type="number" id="ni_sl" placeholder="0" style="text-align:right"></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:7px;align-items:flex-end">
-          <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn giá có VAT (đ) *</div><input type="number" id="ni_dg" placeholder="0" style="text-align:right"></div>
-          <div style="padding:8px 12px;background:#f0fdf4;border-radius:7px;font-size:12px;color:#166534">
-            Thành tiền: <b id="ni_tt_preview">0 đ</b>
-          </div>
-          <button class="btn btn-primary" onclick="themHangHoaHD()">+ Thêm</button>
-        </div>
-      </div>
+      <div id="niFormWrap"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
       <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:14px">
@@ -490,31 +467,7 @@ th{position:relative;}
       </div>
     </div>
     <div id="bg_itemsWrap"></div>
-    <div style="background:#f8fafc;border-radius:9px;padding:12px;border:1px dashed #e2e8f0;margin-top:8px">
-      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:9px">➕ Thêm hàng hóa thủ công <span style="color:#94a3b8;font-weight:400">(* bắt buộc)</span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-bottom:7px">
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Mã thuốc</div><input id="bni_ma" placeholder="VD: 001..."></div>
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên thuốc *</div><input id="bni_ten" placeholder="Tên thuốc..."></div>
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên hoạt chất</div><input id="bni_hoatchat" placeholder="Hoạt chất..."></div>
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Nồng độ, hàm lượng</div><input id="bni_nongdo" placeholder="500mg..."></div>
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Dạng bào chế</div><input id="bni_dbc" placeholder="Viên nén..."></div>
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Quy cách đóng gói</div><input id="bni_quycach" placeholder="Hộp 10 vỉ..."></div>
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Hạn dùng (tháng)</div><input type="number" id="bni_handung" placeholder="24" style="text-align:right"></div>
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">GĐKLH / GPNK</div><input id="bni_sdk" placeholder="VD: VD-12345-10..."></div>
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Cơ sở sản xuất</div><input id="bni_cssx" placeholder="Tên công ty SX..."></div>
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Nước sản xuất</div><input id="bni_nuoc" placeholder="Việt Nam..."></div>
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn vị tính *</div><input id="bni_dvt" placeholder="ĐVT"></div>
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Số lượng *</div><input type="number" id="bni_sl" placeholder="0" style="text-align:right"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px;align-items:flex-end">
-        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn giá có VAT (đ) *</div><input type="number" id="bni_dg" placeholder="Đơn giá (đ)" style="text-align:right"></div>
-        <div style="padding:8px 12px;background:#f0fdf4;border-radius:7px;font-size:12px;color:#166534">
-          Thành tiền: <b id="bni_tt_preview">0 đ</b>
-        </div>
-        <div></div>
-        <button class="btn btn-success" onclick="themHangHoaBG()">+ Thêm</button>
-      </div>
-    </div>
+    <div id="bniFormWrap"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
       <button class="btn btn-outline" onclick="dongModal('modalBG')">Huỷ</button>
       <button class="btn btn-primary" id="btnSaveBG" onclick="luuBanGiao()">💾 Lưu hóa đơn bàn giao</button>
@@ -989,13 +942,13 @@ async function taiDuLieu() {
     snapHH.forEach(d => {
       const r = d.data();
       if (!hhMap[r.soHD]) hhMap[r.soHD] = [];
-      hhMap[r.soHD].push({ id: r.maHH, ten: r.ten, dvt: r.dvt, soLuong: r.soLuong||0, donGia: r.donGia||0, maThuoc:r.maThuoc||"", hoatChat:r.hoatChat||"", nongDo:r.nongDo||"", dangBaoShe:r.dangBaoShe||"", quyCach:r.quyCach||"", hanDung:r.hanDung||"", sdk:r.sdk||"", coSoSX:r.coSoSX||"", nuocSX:r.nuocSX||"", ghiChu:r.ghiChu||"", tongDC:r.tongDC||0 });
+      hhMap[r.soHD].push({ id: r.maHH, ten: r.ten, dvt: r.dvt, soLuong: r.soLuong||0, donGia: r.donGia||0, maThuoc:r.maThuoc||"", hoatChat:r.hoatChat||"", nongDo:r.nongDo||"", dangBaoShe:r.dangBaoShe||"", quyCach:r.quyCach||"", hanDung:r.hanDung||"", sdk:r.sdk||"", coSoSX:r.coSoSX||"", nuocSX:r.nuocSX||"", ghiChu:r.ghiChu||"", tongDC:r.tongDC||0, tenThuongMai:r.tenThuongMai||"", kyMaHieu:r.kyMaHieu||"", nhanHieu:r.nhanHieu||"", namSX:r.namSX||"", xuatXu:r.xuatXu||"", hangSX:r.hangSX||"", cauHinhKT:r.cauHinhKT||"" });
     });
 
     snapBGHH.forEach(d => {
       const r = d.data();
       if (!bghhMap[r.maBG]) bghhMap[r.maBG] = [];
-      bghhMap[r.maBG].push({ id: r.maHH, itemId: r.maHH, ten: r.ten, dvt: r.dvt, soLuong: r.soLuong||0, donGia: r.donGia||0, maThuoc:r.maThuoc||"", hoatChat:r.hoatChat||"", nongDo:r.nongDo||"", dangBaoShe:r.dangBaoShe||"", quyCach:r.quyCach||"", hanDung:r.hanDung||"", sdk:r.sdk||"", coSoSX:r.coSoSX||"", nuocSX:r.nuocSX||"", ghiChu:r.ghiChu||"" });
+      bghhMap[r.maBG].push({ id: r.maHH, itemId: r.maHH, ten: r.ten, dvt: r.dvt, soLuong: r.soLuong||0, donGia: r.donGia||0, maThuoc:r.maThuoc||"", hoatChat:r.hoatChat||"", nongDo:r.nongDo||"", dangBaoShe:r.dangBaoShe||"", quyCach:r.quyCach||"", hanDung:r.hanDung||"", sdk:r.sdk||"", coSoSX:r.coSoSX||"", nuocSX:r.nuocSX||"", ghiChu:r.ghiChu||"", tenThuongMai:r.tenThuongMai||"", kyMaHieu:r.kyMaHieu||"", nhanHieu:r.nhanHieu||"", namSX:r.namSX||"", xuatXu:r.xuatXu||"", hangSX:r.hangSX||"", cauHinhKT:r.cauHinhKT||"" });
     });
 
     snapBG.forEach(d => {
@@ -2429,22 +2382,40 @@ function renderTabBC() {
   (hd.banGiao||[]).forEach(function(bg){ if(bg.ngay && !seenDates[bg.ngay]){seenDates[bg.ngay]=1;allDates.push(bg.ngay);} });
   allDates.sort();
 
+  const loai = hd.loaiHD || "";
+  const isThuoc = !loai || loai==="Thuốc" || loai==="Vắc xin";
+
   const thBg = 'padding:6px 5px;background:#1e3a8a;color:#fff;border:1px solid #3b82f6';
   const thDc = 'padding:6px 5px;background:#7c3aed;color:#fff;border:1px solid #7c3aed;text-align:right';
   const thGr = 'padding:6px 5px;background:#065f46;color:#fff;border:1px solid #059669';
-  let th = '<th style="'+thBg+';text-align:center">Mã</th>'
-    + '<th style="'+thBg+'">Tên thuốc</th>'
-    + '<th style="'+thBg+'">Hoạt chất</th>'
-    + '<th style="'+thBg+'">Nồng độ</th>'
-    + '<th style="'+thBg+'">Dạng BC</th>'
-    + '<th style="'+thBg+'">Quy cách</th>'
-    + '<th style="'+thBg+'">GĐKLH/GPNK</th>'
-    + '<th style="'+thBg+'">Cơ sở SX</th>'
-    + '<th style="'+thBg+';text-align:center">Nước SX</th>'
-    + '<th style="'+thBg+';text-align:center">ĐVT</th>'
-    + '<th style="'+thBg+';text-align:right">SL HĐ</th>'
-    + (coDC ? '<th style="'+thDc+'">SL sau ĐC</th>' : '')
-    + '<th style="'+thBg+';text-align:right">Đơn giá</th>';
+  let th;
+  if (isThuoc) {
+    th = '<th style="'+thBg+';text-align:center">Mã</th>'
+      + '<th style="'+thBg+'">Tên thuốc</th>'
+      + '<th style="'+thBg+'">Hoạt chất</th>'
+      + '<th style="'+thBg+'">Nồng độ</th>'
+      + '<th style="'+thBg+'">Dạng BC</th>'
+      + '<th style="'+thBg+'">Quy cách</th>'
+      + '<th style="'+thBg+'">GĐKLH/GPNK</th>'
+      + '<th style="'+thBg+'">Cơ sở SX</th>'
+      + '<th style="'+thBg+';text-align:center">Nước SX</th>'
+      + '<th style="'+thBg+';text-align:center">ĐVT</th>'
+      + '<th style="'+thBg+';text-align:right">SL HĐ</th>'
+      + (coDC ? '<th style="'+thDc+'">SL sau ĐC</th>' : '')
+      + '<th style="'+thBg+';text-align:right">Đơn giá</th>';
+  } else {
+    th = '<th style="'+thBg+'">Tên hàng hóa</th>'
+      + '<th style="'+thBg+'">Tên thương mại</th>'
+      + '<th style="'+thBg+'">Ký mã hiệu</th>'
+      + '<th style="'+thBg+'">Nhãn hiệu</th>'
+      + '<th style="'+thBg+'">Năm SX</th>'
+      + '<th style="'+thBg+'">Xuất xứ</th>'
+      + '<th style="'+thBg+'">Hãng SX</th>'
+      + '<th style="'+thBg+';text-align:center">ĐVT</th>'
+      + '<th style="'+thBg+';text-align:right">SL HĐ</th>'
+      + (coDC ? '<th style="'+thDc+'">SL sau ĐC</th>' : '')
+      + '<th style="'+thBg+';text-align:right">Đơn giá</th>';
+  }
   allDates.forEach(function(d){
     th += '<th style="padding:6px 5px;background:#1e40af;color:#fff;text-align:center;border:1px solid #3b82f6;min-width:70px">Bàn giao<br>'+fmtNgay(d)+'</th>';
   });
@@ -2465,19 +2436,34 @@ function renderTabBC() {
     const bg = i%2===0?'#fff':'#f8fafc';
     const tyLeColor = tyLe>=100?'#22c55e':tyLe>=50?'#f59e0b':'#ef4444';
     const td = function(val, style){ return '<td style="padding:5px 6px;border:1px solid #e2e8f0;background:'+bg+';'+(style||'')+'">'+val+'</td>'; };
-    let row = td(it.maThuoc||'—','text-align:center;color:#7c3aed')
-      + td(it.ten,'font-weight:600;color:#1e40af')
-      + td(it.hoatChat||'—','color:#0ea5e9')
-      + td(it.nongDo||'—')
-      + td(it.dangBaoShe||'—')
-      + td(it.quyCach||'—')
-      + td(it.sdk||'—','color:#7c3aed')
-      + td(it.coSoSX||'—')
-      + td(it.nuocSX||'—','text-align:center')
-      + td(it.dvt,'text-align:center')
-      + td(fmtSo(it.soLuong),'text-align:right;font-weight:600')
-      + (coDC ? '<td style="padding:5px 6px;border:1px solid #e2e8f0;background:#eff6ff;text-align:right;font-weight:700;color:#7c3aed">'+fmtSo(slDC)+'</td>' : '')
-      + td(fmtSo(it.donGia),'text-align:right');
+    let row;
+    if (isThuoc) {
+      row = td(it.maThuoc||'—','text-align:center;color:#7c3aed')
+        + td(it.ten,'font-weight:600;color:#1e40af')
+        + td(it.hoatChat||'—','color:#0ea5e9')
+        + td(it.nongDo||'—')
+        + td(it.dangBaoShe||'—')
+        + td(it.quyCach||'—')
+        + td(it.sdk||'—','color:#7c3aed')
+        + td(it.coSoSX||'—')
+        + td(it.nuocSX||'—','text-align:center')
+        + td(it.dvt,'text-align:center')
+        + td(fmtSo(it.soLuong),'text-align:right;font-weight:600')
+        + (coDC ? '<td style="padding:5px 6px;border:1px solid #e2e8f0;background:#eff6ff;text-align:right;font-weight:700;color:#7c3aed">'+fmtSo(slDC)+'</td>' : '')
+        + td(fmtSo(it.donGia),'text-align:right');
+    } else {
+      row = td(it.ten,'font-weight:600;color:#1e40af')
+        + td(it.tenThuongMai||'—')
+        + td(it.kyMaHieu||'—','color:#7c3aed')
+        + td(it.nhanHieu||'—')
+        + td(it.namSX||'—')
+        + td(it.xuatXu||'—')
+        + td(it.hangSX||'—')
+        + td(it.dvt,'text-align:center')
+        + td(fmtSo(it.soLuong),'text-align:right;font-weight:600')
+        + (coDC ? '<td style="padding:5px 6px;border:1px solid #e2e8f0;background:#eff6ff;text-align:right;font-weight:700;color:#7c3aed">'+fmtSo(slDC)+'</td>' : '')
+        + td(fmtSo(it.donGia),'text-align:right');
+    }
     allDates.forEach(function(d){
       const sl = byDate[d]||0;
       row += '<td style="padding:5px 6px;border:1px solid #e2e8f0;text-align:right;background:'+bg+';'+(sl>0?'color:#1e40af;font-weight:600':'color:#94a3b8')+'">'+( sl>0?fmtSo(sl):'—')+'</td>';
@@ -3223,10 +3209,12 @@ function renderTabCon() {
   });
   const coDC = items.some(i=>(i.tongDC||0)!==0);
   const overC=items.filter(i=>i.remainQty<0).length, doneC=items.filter(i=>i.remainQty===0).length, leftC=items.filter(i=>i.remainQty>0).length;
+  const loaiCon = hd.loaiHD || "";
+  const isThuocCon = !loaiCon || loaiCon==="Thuốc" || loaiCon==="Vắc xin";
   let html = '<div style="font-weight:800;font-size:13px;margin-bottom:10px;color:#374151">Hàng hóa còn lại trong hợp đồng</div>';
   if (items.length) {
     html += `<div class="table-wrap"><table><thead><tr>
-      <th>#</th><th>Tên hàng hóa</th><th>ĐVT</th>
+      <th>#</th><th>${isThuocCon?'Tên thuốc':'Tên hàng hóa'}</th><th>ĐVT</th>
       <th style="text-align:right">SL HĐ</th>
       ${coDC?'<th style="text-align:right;background:#eff6ff;color:#1e40af">SL sau ĐC</th>':''}
       <th style="text-align:right">Đã BG</th>
@@ -3298,7 +3286,7 @@ window.moFormThem = function() {
   document.getElementById("f_soHD").style.background="";
   document.getElementById("f_soHD").style.borderColor="#e2e8f0";
   document.getElementById("f_soHD").title="";
-  renderHDItems(); moModal("modalHD");
+  renderHDItems(); renderNiForm(); moModal("modalHD");
 };
 window.moFormSua = function(docIdOrSoHD) {
   const hd = allHD.find(h=>h._docId===docIdOrSoHD) || allHD.find(h=>h.soHD===docIdOrSoHD);
@@ -3306,7 +3294,7 @@ window.moFormSua = function(docIdOrSoHD) {
   const soHD = hd.soHD;
   editMode=true; editSoHD=soHD; _editDocId=hd._docId||safeId(soHD); hdItems=JSON.parse(JSON.stringify(hd.hangHoa||[])).map(it=>({
     id:it.id, maThuoc:it.maThuoc||"", ten:it.ten, hoatChat:it.hoatChat||"",
-    nongDo:it.nongDo||"", dangBaoShe:it.dangBaoShe||"", quyCach:it.quyCach||"",
+    nongDo:it.nongDo||"", tenThuongMai:it.tenThuongMai||"", kyMaHieu:it.kyMaHieu||"", nhanHieu:it.nhanHieu||"", namSX:it.namSX||"", xuatXu:it.xuatXu||"", hangSX:it.hangSX||"", cauHinhKT:it.cauHinhKT||"", dangBaoShe:it.dangBaoShe||"", quyCach:it.quyCach||"",
     hanDung:it.hanDung||"", sdk:it.sdk||"", coSoSX:it.coSoSX||"",
     nuocSX:it.nuocSX||"", dvt:it.dvt, soLuong:it.soLuong, donGia:it.donGia,
     tongDC:it.tongDC||0
@@ -3337,64 +3325,215 @@ window.themHangHoaHD = function() {
   document.getElementById("ni_tt_preview").textContent="0 đ";
   renderHDItems();
 };
+// ── Helper: loai HĐ ──
+function isLoaiThuoc() {
+  const loai = (document.getElementById("f_loaiHD")||{value:""}).value.trim();
+  return !loai || loai === "Thuốc" || loai === "Vắc xin";
+}
+
+function renderNiForm() {
+  const wrap = document.getElementById("niFormWrap");
+  if (!wrap) return;
+  if (isLoaiThuoc()) {
+    wrap.innerHTML = `
+    <div style="background:#f0f9ff;border-radius:9px;padding:12px;border:1px dashed #93c5fd;margin-top:8px">
+      <div style="font-size:11px;color:#3b82f6;font-weight:700;margin-bottom:9px">➕ Thêm hàng hóa <span style="color:#94a3b8;font-weight:400">(* bắt buộc)</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-bottom:7px">
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Mã thuốc</div><input id="ni_ma" placeholder="VD: 001..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên thuốc *</div><input id="ni_ten" placeholder="Tên thuốc..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên hoạt chất / Thành phần</div><input id="ni_hoatchat" placeholder="Hoạt chất..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Nồng độ, hàm lượng</div><input id="ni_nongdo" placeholder="VD: 500mg..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Dạng bào chế</div><input id="ni_dbc" placeholder="Viên nén, Tiêm..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Quy cách đóng gói</div><input id="ni_quycach" placeholder="Hộp 10 vỉ x 10 viên..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Hạn dùng (tháng)</div><input type="number" id="ni_handung" placeholder="24" style="text-align:right"></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">GĐKLH / GPNK</div><input id="ni_sdk" placeholder="VD: VD-12345-10..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Cơ sở sản xuất</div><input id="ni_cssx" placeholder="Tên công ty SX..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Nước sản xuất</div><input id="ni_nuoc" placeholder="Việt Nam..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn vị tính *</div><input id="ni_dvt" placeholder="Hộp, Viên..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Số lượng *</div><input type="number" id="ni_sl" placeholder="0" style="text-align:right" oninput="capNhatTTPreview()"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:7px;align-items:flex-end">
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn giá có VAT (đ) *</div><input type="number" id="ni_dg" placeholder="0" style="text-align:right" oninput="capNhatTTPreview()"></div>
+        <div style="padding:8px 12px;background:#f0fdf4;border-radius:7px;font-size:12px;color:#166534">Thành tiền: <b id="ni_tt_preview">0 đ</b></div>
+        <button class="btn btn-primary" onclick="themHangHoaHD()">+ Thêm</button>
+      </div>
+    </div>`;
+  } else {
+    wrap.innerHTML = `
+    <div style="background:#fff7ed;border-radius:9px;padding:12px;border:1px dashed #fdba74;margin-top:8px">
+      <div style="font-size:11px;color:#c2410c;font-weight:700;margin-bottom:9px">➕ Thêm hàng hóa <span style="color:#94a3b8;font-weight:400">(* bắt buộc)</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-bottom:7px">
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên hàng hóa *</div><input id="ni_ten" placeholder="Tên hàng hóa..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên thương mại</div><input id="ni_thuongmai" placeholder="Tên thương mại..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Ký mã hiệu</div><input id="ni_kyma" placeholder="VD: BSM-3562..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Nhãn hiệu</div><input id="ni_nhanhieu" placeholder="VD: NIHON KOHDEN..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Năm sản xuất</div><input id="ni_namsx" placeholder="VD: Năm 2025 trở về sau..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Xuất xứ</div><input id="ni_xuatxu" placeholder="VD: Nhật Bản..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Hãng sản xuất</div><input id="ni_hangsx" placeholder="Tên hãng SX..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn vị tính *</div><input id="ni_dvt" placeholder="Cái, Bộ, Máy..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Số lượng *</div><input type="number" id="ni_sl" placeholder="0" style="text-align:right" oninput="capNhatTTPreview()"></div>
+      </div>
+      <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Cấu hình, tính năng kỹ thuật cơ bản</div>
+        <textarea id="ni_cauhinh" rows="3" placeholder="Nhập cấu hình kỹ thuật..." style="width:100%;resize:vertical;font-size:12px;border-radius:7px;border:1px solid #e2e8f0;padding:8px;outline:none;font-family:inherit;background:#fff" onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:7px;align-items:flex-end;margin-top:7px">
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn giá có VAT (đ) *</div><input type="number" id="ni_dg" placeholder="0" style="text-align:right" oninput="capNhatTTPreview()"></div>
+        <div style="padding:8px 12px;background:#fff7ed;border-radius:7px;font-size:12px;color:#c2410c">Thành tiền: <b id="ni_tt_preview">0 đ</b></div>
+        <button class="btn btn-primary" style="background:#c2410c" onclick="themHangHoaHD()">+ Thêm</button>
+      </div>
+    </div>`;
+  }
+}
+
+window.capNhatTTPreview = function() {
+  const sl = parseFloat(document.getElementById("ni_sl")?.value)||0;
+  const dg = parseFloat(document.getElementById("ni_dg")?.value)||0;
+  const el = document.getElementById("ni_tt_preview");
+  if (el) el.textContent = fmtSo(sl*dg)+" đ";
+};
+
+window.themHangHoaHD = function() {
+  const ten=v("ni_ten"),dvt=v("ni_dvt"),sl=v("ni_sl"),dg=v("ni_dg");
+  if(!ten||!dvt||!sl||!dg){showToast("Điền đủ thông tin bắt buộc: Tên, ĐVT, SL, Đơn giá!","error");return;}
+  if (isLoaiThuoc()) {
+    hdItems.push({
+      id:"HH_"+Date.now()+"_"+Math.random().toString(36).slice(2,5),
+      maThuoc:v("ni_ma"), ten, hoatChat:v("ni_hoatchat"),
+      nongDo:v("ni_nongdo"), dangBaoShe:v("ni_dbc"), quyCach:v("ni_quycach"),
+      hanDung:v("ni_handung"), sdk:v("ni_sdk"), coSoSX:v("ni_cssx"),
+      nuocSX:v("ni_nuoc"), dvt, soLuong:Number(sl), donGia:Number(dg)
+    });
+    ["ni_ma","ni_ten","ni_hoatchat","ni_nongdo","ni_dbc","ni_quycach","ni_handung","ni_sdk","ni_cssx","ni_nuoc","ni_dvt","ni_sl","ni_dg"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  } else {
+    hdItems.push({
+      id:"HH_"+Date.now()+"_"+Math.random().toString(36).slice(2,5),
+      ten, tenThuongMai:v("ni_thuongmai"), kyMaHieu:v("ni_kyma"),
+      nhanHieu:v("ni_nhanhieu"), namSX:v("ni_namsx"), xuatXu:v("ni_xuatxu"),
+      hangSX:v("ni_hangsx"), cauHinhKT:v("ni_cauhinh"),
+      dvt, soLuong:Number(sl), donGia:Number(dg),
+      // giữ các trường thuốc rỗng để backward compat
+      maThuoc:"", hoatChat:"", nongDo:"", dangBaoShe:"", quyCach:"",
+      hanDung:"", sdk:"", coSoSX:"", nuocSX:""
+    });
+    ["ni_ten","ni_thuongmai","ni_kyma","ni_nhanhieu","ni_namsx","ni_xuatxu","ni_hangsx","ni_cauhinh","ni_dvt","ni_sl","ni_dg"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  }
+  const preview = document.getElementById("ni_tt_preview");
+  if (preview) preview.textContent = "0 đ";
+  renderHDItems();
+};
+
 window.xoaHangHoaHDForm = function(idx){
   const it = hdItems[idx];
   if (!confirm(`Bạn có chắc chắn muốn xóa mặt hàng "${it.ten||'này'}"?`)) return;
   hdItems.splice(idx,1); renderHDItems();
 };
+
 function renderHDItems() {
   const wrap=document.getElementById("hdItemsWrap");
+  renderNiForm(); // render input form theo loại
   if(!hdItems.length){wrap.innerHTML="";return;}
   const total=hdItems.reduce((s,it)=>s+(it.soLuong||0)*(it.donGia||0),0);
-  wrap.innerHTML=`<div class="table-wrap" style=""><table class="sticky-table" style="font-size:13px;width:100%;table-layout:fixed"><thead><tr>
-    <th class="sticky sticky-1" style="width:2%">#</th>
-    <th class="sticky sticky-2" style="width:4%">Mã</th>
-    <th class="sticky sticky-3" style="width:8%">Tên thuốc</th>
-    <th class="sticky sticky-4" style="width:10%">Hoạt chất</th>
-    <th style="width:9%">Nồng độ</th>
-    <th style="width:4%">Dạng BC</th>
-    <th style="width:4%">Quy cách</th>
-    <th style="width:3%;text-align:center">Hạn<br>dùng</th>
-    <th style="width:9%;word-break:break-word">GĐKLH/GPNK</th>
-    <th style="width:7%;word-break:break-word">Cơ sở SX</th>
-    <th style="width:4%">Nước SX</th>
-    <th style="width:3%">ĐVT</th>
-    <th style="text-align:right;white-space:nowrap">SL HĐ</th>
-    <th style="text-align:right;white-space:nowrap">Đơn giá</th>
-    <th style="text-align:right;white-space:nowrap">Thành tiền</th>
-    <th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap" title="Số lượng điều chỉnh">SL ĐC</th>
-    <th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap">TT sau ĐC</th>
-    <th class="col-sua" style="width:36px">Sửa</th>
-  </tr></thead><tbody>
-    ${hdItems.map((it,i)=>`<tr>
-      <td class="sticky sticky-1" style="color:#94a3b8;text-align:center">${i+1}</td>
-      <td class="sticky sticky-2" style="color:#7c3aed;white-space:nowrap">${it.maThuoc||"---"}</td>
-      <td class="sticky sticky-3" style="font-weight:600;color:#1e40af">${it.ten}</td>
-      <td class="sticky sticky-4" style="color:#0ea5e9">${it.hoatChat||"---"}</td>
-      <td style="word-break:break-word">${it.nongDo||"---"}</td><td style="word-break:break-word">${it.dangBaoShe||"---"}</td>
-      <td style="word-break:break-word">${it.quyCach||"---"}</td>
-      <td style="text-align:center">${it.hanDung||"---"}</td>
-      <td style="color:#7c3aed;word-break:break-word;min-width:0">${it.sdk||"---"}</td>
-      <td style="word-break:break-word">${it.coSoSX||"---"}</td><td style="white-space:nowrap">${it.nuocSX||"---"}</td>
-      <td style="white-space:nowrap">${it.dvt}</td>
-      <td style="text-align:right">${fmtSo(it.soLuong)}</td>
-      <td style="text-align:right">${fmtSo(it.donGia)}</td>
-      <td style="text-align:right;font-weight:600;color:#22c55e">${fmtSo((it.soLuong||0)*(it.donGia||0))}</td>
-      <td style="text-align:right;background:#eff6ff">
-        <button class="btn btn-sm" style="background:${(it.tongDC||0)!==0?'#eff6ff':'#f8fafc'};color:${(it.tongDC||0)!==0?'#1e40af':'#94a3b8'};border:1px solid ${(it.tongDC||0)!==0?'#bfdbfe':'#e2e8f0'};padding:2px 6px;font-size:11px;font-weight:${(it.tongDC||0)!==0?'700':'400'}" onclick="moModalDC('${it.id}',${i})" title="${(it.tongDC||0)!==0?'SL sau ĐC: '+(it.soLuong||0)+(it.tongDC||0):'Thêm điều chỉnh'}">${fmtSo((it.soLuong||0)+(it.tongDC||0))}</button>
-      </td>
-      <td style="text-align:right;font-weight:700;background:#eff6ff;color:${((it.soLuong||0)+(it.tongDC||0))>0?'#1e40af':'#ef4444'};white-space:nowrap">${fmtSo(((it.soLuong||0)+(it.tongDC||0))*(it.donGia||0))}</td>
-      <td class="col-sua"><button class="btn btn-danger btn-sm" onclick="xoaHangHoaHDForm(${i})">🗑️</button></td>
-    </tr>`).join("")}
-    <tr class="tong-row">
-      <td class="sticky sticky-1"></td><td class="sticky sticky-2"></td>
-      <td class="sticky sticky-3"></td><td class="sticky sticky-4"></td>
-      <td colspan="10" style="text-align:right">Tổng:</td>
-      <td style="text-align:right;color:#22c55e;white-space:nowrap">${fmtSo(total)} đ</td>
-      <td style="text-align:right;color:#1e40af;background:#eff6ff;white-space:nowrap">${fmtSo(hdItems.reduce((s,it)=>s+((it.soLuong||0)+(it.tongDC||0))*(it.donGia||0),0))} đ</td>
-      <td class="col-sua"></td>
-    </tr>
-  </tbody></table></div>`;
+  const thuoc = isLoaiThuoc();
+
+  if (thuoc) {
+    wrap.innerHTML=`<div class="table-wrap"><table class="sticky-table" style="font-size:13px;width:100%;table-layout:fixed"><thead><tr>
+      <th class="sticky sticky-1" style="width:2%">#</th>
+      <th class="sticky sticky-2" style="width:4%">Mã</th>
+      <th class="sticky sticky-3" style="width:8%">Tên thuốc</th>
+      <th class="sticky sticky-4" style="width:10%">Hoạt chất</th>
+      <th style="width:9%">Nồng độ</th>
+      <th style="width:4%">Dạng BC</th>
+      <th style="width:4%">Quy cách</th>
+      <th style="width:3%;text-align:center">Hạn<br>dùng</th>
+      <th style="width:9%;word-break:break-word">GĐKLH/GPNK</th>
+      <th style="width:7%;word-break:break-word">Cơ sở SX</th>
+      <th style="width:4%">Nước SX</th>
+      <th style="width:3%">ĐVT</th>
+      <th style="text-align:right;white-space:nowrap">SL HĐ</th>
+      <th style="text-align:right;white-space:nowrap">Đơn giá</th>
+      <th style="text-align:right;white-space:nowrap">Thành tiền</th>
+      <th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap" title="Số lượng điều chỉnh">SL ĐC</th>
+      <th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap">TT sau ĐC</th>
+      <th class="col-sua" style="width:36px">Sửa</th>
+    </tr></thead><tbody>
+      ${hdItems.map((it,i)=>`<tr>
+        <td class="sticky sticky-1" style="color:#94a3b8;text-align:center">${i+1}</td>
+        <td class="sticky sticky-2" style="color:#7c3aed;white-space:nowrap">${it.maThuoc||"---"}</td>
+        <td class="sticky sticky-3" style="font-weight:600;color:#1e40af">${it.ten}</td>
+        <td class="sticky sticky-4" style="color:#0ea5e9">${it.hoatChat||"---"}</td>
+        <td style="word-break:break-word">${it.nongDo||"---"}</td><td style="word-break:break-word">${it.dangBaoShe||"---"}</td>
+        <td style="word-break:break-word">${it.quyCach||"---"}</td>
+        <td style="text-align:center">${it.hanDung||"---"}</td>
+        <td style="color:#7c3aed;word-break:break-word;min-width:0">${it.sdk||"---"}</td>
+        <td style="word-break:break-word">${it.coSoSX||"---"}</td><td style="white-space:nowrap">${it.nuocSX||"---"}</td>
+        <td style="white-space:nowrap">${it.dvt}</td>
+        <td style="text-align:right">${fmtSo(it.soLuong)}</td>
+        <td style="text-align:right">${fmtSo(it.donGia)}</td>
+        <td style="text-align:right;font-weight:600;color:#22c55e">${fmtSo((it.soLuong||0)*(it.donGia||0))}</td>
+        <td style="text-align:right;background:#eff6ff">
+          <button class="btn btn-sm" style="background:${(it.tongDC||0)!==0?'#eff6ff':'#f8fafc'};color:${(it.tongDC||0)!==0?'#1e40af':'#94a3b8'};border:1px solid ${(it.tongDC||0)!==0?'#bfdbfe':'#e2e8f0'};padding:2px 6px;font-size:11px;font-weight:${(it.tongDC||0)!==0?'700':'400'}" onclick="moModalDC('${it.id}',${i})" title="${(it.tongDC||0)!==0?'SL sau ĐC: '+(it.soLuong||0)+(it.tongDC||0):'Thêm điều chỉnh'}">${fmtSo((it.soLuong||0)+(it.tongDC||0))}</button>
+        </td>
+        <td style="text-align:right;font-weight:700;background:#eff6ff;color:${((it.soLuong||0)+(it.tongDC||0))>0?'#1e40af':'#ef4444'};white-space:nowrap">${fmtSo(((it.soLuong||0)+(it.tongDC||0))*(it.donGia||0))}</td>
+        <td class="col-sua"><button class="btn btn-danger btn-sm" onclick="xoaHangHoaHDForm(${i})">🗑️</button></td>
+      </tr>`).join("")}
+      <tr class="tong-row">
+        <td class="sticky sticky-1"></td><td class="sticky sticky-2"></td>
+        <td class="sticky sticky-3"></td><td class="sticky sticky-4"></td>
+        <td colspan="10" style="text-align:right">Tổng:</td>
+        <td style="text-align:right;color:#22c55e;white-space:nowrap">${fmtSo(total)} đ</td>
+        <td style="text-align:right;color:#1e40af;background:#eff6ff;white-space:nowrap">${fmtSo(hdItems.reduce((s,it)=>s+((it.soLuong||0)+(it.tongDC||0))*(it.donGia||0),0))} đ</td>
+        <td class="col-sua"></td>
+      </tr>
+    </tbody></table></div>`;
+  } else {
+    // Bảng VTYT / Trang thiết bị / Hóa chất
+    wrap.innerHTML=`<div class="table-wrap"><table class="sticky-table" style="font-size:12px;width:100%"><thead><tr style="background:#1e3a8a;color:#fff">
+      <th style="width:30px;text-align:center">STT</th>
+      <th style="min-width:140px">Tên hàng hóa</th>
+      <th style="min-width:120px">Tên thương mại</th>
+      <th style="min-width:90px">Ký mã hiệu</th>
+      <th style="min-width:100px">Nhãn hiệu</th>
+      <th style="min-width:110px">Năm sản xuất</th>
+      <th style="min-width:80px">Xuất xứ</th>
+      <th style="min-width:120px">Hãng sản xuất</th>
+      <th style="min-width:200px">Cấu hình, tính năng KT cơ bản</th>
+      <th style="min-width:60px;text-align:center">ĐVT</th>
+      <th style="min-width:70px;text-align:right">Số lượng</th>
+      <th style="min-width:100px;text-align:right">Đơn giá</th>
+      <th style="min-width:110px;text-align:right">Thành tiền</th>
+      <th style="min-width:90px;text-align:right;background:#dbeafe;color:#1e40af">SL ĐC</th>
+      <th style="min-width:110px;text-align:right;background:#dbeafe;color:#1e40af">TT sau ĐC</th>
+      <th style="width:36px">Xóa</th>
+    </tr></thead><tbody>
+      ${hdItems.map((it,i)=>`<tr style="background:${i%2===0?'#fff':'#f8fafc'}">
+        <td style="text-align:center;color:#94a3b8;font-size:11px">${i+1}</td>
+        <td style="font-weight:600;color:#1e40af;word-break:break-word">${it.ten}</td>
+        <td style="word-break:break-word">${it.tenThuongMai||"---"}</td>
+        <td style="white-space:nowrap;color:#7c3aed">${it.kyMaHieu||"---"}</td>
+        <td style="word-break:break-word">${it.nhanHieu||"---"}</td>
+        <td style="word-break:break-word">${it.namSX||"---"}</td>
+        <td style="white-space:nowrap">${it.xuatXu||"---"}</td>
+        <td style="word-break:break-word">${it.hangSX||"---"}</td>
+        <td style="word-break:break-word;font-size:11px;max-width:220px"><div style="max-height:80px;overflow-y:auto;white-space:pre-wrap">${it.cauHinhKT||"---"}</div></td>
+        <td style="text-align:center">${it.dvt}</td>
+        <td style="text-align:right">${fmtSo(it.soLuong)}</td>
+        <td style="text-align:right">${fmtSo(it.donGia)}</td>
+        <td style="text-align:right;font-weight:600;color:#22c55e">${fmtSo((it.soLuong||0)*(it.donGia||0))}</td>
+        <td style="text-align:right;background:#eff6ff">
+          <button class="btn btn-sm" style="background:${(it.tongDC||0)!==0?'#eff6ff':'#f8fafc'};color:${(it.tongDC||0)!==0?'#1e40af':'#94a3b8'};border:1px solid ${(it.tongDC||0)!==0?'#bfdbfe':'#e2e8f0'};padding:2px 6px;font-size:11px" onclick="moModalDC('${it.id}',${i})">${fmtSo((it.soLuong||0)+(it.tongDC||0))}</button>
+        </td>
+        <td style="text-align:right;font-weight:700;background:#eff6ff;color:${((it.soLuong||0)+(it.tongDC||0))>0?'#1e40af':'#ef4444'}">${fmtSo(((it.soLuong||0)+(it.tongDC||0))*(it.donGia||0))}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="xoaHangHoaHDForm(${i})">🗑️</button></td>
+      </tr>`).join("")}
+      <tr style="background:#f1f5f9;font-weight:800">
+        <td colspan="10" style="text-align:right;padding:8px">Tổng:</td>
+        <td></td><td></td>
+        <td style="text-align:right;color:#22c55e">${fmtSo(total)} đ</td>
+        <td style="text-align:right;color:#1e40af;background:#eff6ff">${fmtSo(hdItems.reduce((s,it)=>s+((it.soLuong||0)+(it.tongDC||0))*(it.donGia||0),0))} đ</td>
+        <td></td>
+      </tr>
+    </tbody></table></div>`;
+  }
 }
 window.luuHopDong = async function() {
   const soHD=v("f_soHD"),ten=v("f_ten"),ngayHH=v("f_ngayHH");
@@ -3433,7 +3572,7 @@ window.luuHopDong = async function() {
     // Lưu HH mới
     hdItems.forEach(it => {
       const maHH = it.id || ("HH_"+Date.now()+"_"+Math.random().toString(36).slice(2,5));
-      batch.set(doc(db,"hangHoa",maHH), {soHD,maHH,ten:it.ten,dvt:it.dvt,soLuong:it.soLuong,donGia:it.donGia,maThuoc:it.maThuoc||"",hoatChat:it.hoatChat||"",nongDo:it.nongDo||"",dangBaoShe:it.dangBaoShe||"",quyCach:it.quyCach||"",hanDung:it.hanDung||"",sdk:it.sdk||"",coSoSX:it.coSoSX||"",nuocSX:it.nuocSX||"",tongDC:it.tongDC||0,ghiChu:it.ghiChu||""});
+      batch.set(doc(db,"hangHoa",maHH), {soHD,maHH,ten:it.ten,dvt:it.dvt,soLuong:it.soLuong,donGia:it.donGia,maThuoc:it.maThuoc||"",hoatChat:it.hoatChat||"",nongDo:it.nongDo||"",dangBaoShe:it.dangBaoShe||"",quyCach:it.quyCach||"",hanDung:it.hanDung||"",sdk:it.sdk||"",coSoSX:it.coSoSX||"",nuocSX:it.nuocSX||"",tongDC:it.tongDC||0,ghiChu:it.ghiChu||"",tenThuongMai:it.tenThuongMai||"",kyMaHieu:it.kyMaHieu||"",nhanHieu:it.nhanHieu||"",namSX:it.namSX||"",xuatXu:it.xuatXu||"",hangSX:it.hangSX||"",cauHinhKT:it.cauHinhKT||""});
     });
     await batch.commit();
     showToast(editMode?"Cập nhật thành công!":"Thêm hợp đồng thành công!");
@@ -3511,9 +3650,8 @@ function resetFormBG(ngayMacDinh){
   document.getElementById("bg_picker").style.display="none";
   const chips=(currentHD.hangHoa||[]).map(ci=>`<span class="chip" id="chip_${ci.id}" onclick="pickChip('${ci.id}')">${ci.ten} <span style="color:#94a3b8;font-size:10px">· ${ci.dvt} · ${fmtSo(ci.donGia)}đ</span></span>`).join("");
   document.getElementById("bg_chips").innerHTML=chips||'<span style="color:#94a3b8;font-size:12px">Chưa có danh mục</span>';
-  renderBGItems(); moModal("modalBG");
-}
-window.moFormChinhSuaBG = function(maBG){
+  renderBGItems(); renderBniForm(); moModal("modalBG");
+} = function(maBG){
   const bg=(currentHD.banGiao||[]).find(b=>b.id===maBG);
   if(!bg){showToast("Không tìm thấy hóa đơn!","error");return;}
   _editBGMode=true;_editBGmaBG=maBG;
@@ -3540,7 +3678,7 @@ window.moFormChinhSuaBG = function(maBG){
   const existIds=bgItems.map(x=>x.itemId);
   const chips=(currentHD.hangHoa||[]).map(ci=>`<span class="chip${existIds.includes(ci.id)?" picked":""}" id="chip_${ci.id}" onclick="pickChip('${ci.id}')">${ci.ten} <span style="color:#94a3b8;font-size:10px">· ${ci.dvt} · ${fmtSo(ci.donGia)}đ</span></span>`).join("");
   document.getElementById("bg_chips").innerHTML=chips||'<span style="color:#94a3b8;font-size:12px">Chưa có danh mục</span>';
-  renderBGItems(); moModal("modalBG");
+  renderBGItems(); renderBniForm(); moModal("modalBG");
 };
 
 window.tinhHanTT = function(){
@@ -3567,19 +3705,91 @@ window.pickChip=function(itemId){
   document.getElementById("chip_"+itemId).className="chip picked";
   renderBGItems();kiemTraVuotRealtime();
 };
+function renderBniForm() {
+  const wrap = document.getElementById("bniFormWrap");
+  if (!wrap) return;
+  const loai = currentHD?.loaiHD || "";
+  const isThuoc = !loai || loai==="Thuốc" || loai==="Vắc xin";
+  if (isThuoc) {
+    wrap.innerHTML = `
+    <div style="background:#f8fafc;border-radius:9px;padding:12px;border:1px dashed #e2e8f0;margin-top:8px">
+      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:9px">➕ Thêm hàng hóa thủ công <span style="color:#94a3b8;font-weight:400">(* bắt buộc)</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-bottom:7px">
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Mã thuốc</div><input id="bni_ma" placeholder="VD: 001..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên thuốc *</div><input id="bni_ten" placeholder="Tên thuốc..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên hoạt chất</div><input id="bni_hoatchat" placeholder="Hoạt chất..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Nồng độ, hàm lượng</div><input id="bni_nongdo" placeholder="500mg..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Dạng bào chế</div><input id="bni_dbc" placeholder="Viên nén..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Quy cách đóng gói</div><input id="bni_quycach" placeholder="Hộp 10 vỉ..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Hạn dùng (tháng)</div><input type="number" id="bni_handung" placeholder="24" style="text-align:right"></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">GĐKLH / GPNK</div><input id="bni_sdk" placeholder="VD: VD-12345-10..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Cơ sở sản xuất</div><input id="bni_cssx" placeholder="Tên công ty SX..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Nước sản xuất</div><input id="bni_nuoc" placeholder="Việt Nam..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn vị tính *</div><input id="bni_dvt" placeholder="ĐVT"></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Số lượng *</div><input type="number" id="bni_sl" placeholder="0" style="text-align:right"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px;align-items:flex-end">
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn giá có VAT (đ) *</div><input type="number" id="bni_dg" placeholder="Đơn giá (đ)" style="text-align:right"></div>
+        <div style="padding:8px 12px;background:#f0fdf4;border-radius:7px;font-size:12px;color:#166534">Thành tiền: <b id="bni_tt_preview">0 đ</b></div>
+        <div></div>
+        <button class="btn btn-success" onclick="themHangHoaBG()">+ Thêm</button>
+      </div>
+    </div>`;
+  } else {
+    wrap.innerHTML = `
+    <div style="background:#fff7ed;border-radius:9px;padding:12px;border:1px dashed #fdba74;margin-top:8px">
+      <div style="font-size:11px;color:#c2410c;font-weight:700;margin-bottom:9px">➕ Thêm hàng hóa thủ công <span style="color:#94a3b8;font-weight:400">(* bắt buộc)</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-bottom:7px">
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên hàng hóa *</div><input id="bni_ten" placeholder="Tên hàng hóa..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Tên thương mại</div><input id="bni_thuongmai" placeholder="Tên thương mại..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Ký mã hiệu</div><input id="bni_kyma" placeholder="VD: BSM-3562..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Nhãn hiệu</div><input id="bni_nhanhieu" placeholder="VD: NIHON KOHDEN..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Năm sản xuất</div><input id="bni_namsx" placeholder="VD: Năm 2025 trở về sau..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Xuất xứ</div><input id="bni_xuatxu" placeholder="VD: Nhật Bản..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Hãng sản xuất</div><input id="bni_hangsx" placeholder="Tên hãng SX..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn vị tính *</div><input id="bni_dvt" placeholder="Cái, Bộ, Máy..."></div>
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Số lượng *</div><input type="number" id="bni_sl" placeholder="0" style="text-align:right"></div>
+      </div>
+      <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Cấu hình, tính năng kỹ thuật cơ bản</div>
+        <textarea id="bni_cauhinh" rows="2" placeholder="Nhập cấu hình kỹ thuật..." style="width:100%;resize:vertical;font-size:12px;border-radius:7px;border:1px solid #e2e8f0;padding:8px;outline:none;font-family:inherit;background:#fff;margin-bottom:7px" onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px;align-items:flex-end">
+        <div><div style="font-size:10px;color:#64748b;margin-bottom:2px">Đơn giá có VAT (đ) *</div><input type="number" id="bni_dg" placeholder="Đơn giá (đ)" style="text-align:right"></div>
+        <div style="padding:8px 12px;background:#fff7ed;border-radius:7px;font-size:12px;color:#c2410c">Thành tiền: <b id="bni_tt_preview">0 đ</b></div>
+        <div></div>
+        <button class="btn btn-primary" style="background:#c2410c" onclick="themHangHoaBG()">+ Thêm</button>
+      </div>
+    </div>`;
+  }
+}
+
 window.themHangHoaBG=function(){
   const ten=v("bni_ten"),dvt=v("bni_dvt"),sl=v("bni_sl"),dg=v("bni_dg");
   if(!ten||!dvt||!sl||!dg){showToast("Điền đủ thông tin bắt buộc: Tên, ĐVT, SL, Đơn giá!","error");return;}
-  bgItems.push({
-    id:"BGI_"+Date.now(),
-    maThuoc:v("bni_ma"), ten, hoatChat:v("bni_hoatchat"),
-    nongDo:v("bni_nongdo"), dangBaoShe:v("bni_dbc"), quyCach:v("bni_quycach"),
-    hanDung:v("bni_handung"), sdk:v("bni_sdk"), coSoSX:v("bni_cssx"),
-    nuocSX:v("bni_nuoc"), dvt, soLuong:Number(sl), donGia:Number(dg)
-  });
-  ["bni_ma","bni_ten","bni_hoatchat","bni_nongdo","bni_dbc","bni_quycach","bni_handung","bni_sdk","bni_cssx","bni_nuoc","bni_dvt","bni_sl","bni_dg"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("bni_tt_preview").textContent="0 đ";
-  renderBGItems();
+  const loai = currentHD?.loaiHD || "";
+  const isThuoc = !loai || loai==="Thuốc" || loai==="Vắc xin";
+  if (isThuoc) {
+    bgItems.push({
+      id:"BGI_"+Date.now(),
+      maThuoc:v("bni_ma"), ten, hoatChat:v("bni_hoatchat"),
+      nongDo:v("bni_nongdo"), dangBaoShe:v("bni_dbc"), quyCach:v("bni_quycach"),
+      hanDung:v("bni_handung"), sdk:v("bni_sdk"), coSoSX:v("bni_cssx"),
+      nuocSX:v("bni_nuoc"), dvt, soLuong:Number(sl), donGia:Number(dg)
+    });
+    ["bni_ma","bni_ten","bni_hoatchat","bni_nongdo","bni_dbc","bni_quycach","bni_handung","bni_sdk","bni_cssx","bni_nuoc","bni_dvt","bni_sl","bni_dg"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  } else {
+    bgItems.push({
+      id:"BGI_"+Date.now(),
+      ten, tenThuongMai:v("bni_thuongmai"), kyMaHieu:v("bni_kyma"),
+      nhanHieu:v("bni_nhanhieu"), namSX:v("bni_namsx"), xuatXu:v("bni_xuatxu"),
+      hangSX:v("bni_hangsx"), cauHinhKT:v("bni_cauhinh"),
+      dvt, soLuong:Number(sl), donGia:Number(dg),
+      maThuoc:"", hoatChat:"", nongDo:"", dangBaoShe:"", quyCach:"", hanDung:"", sdk:"", coSoSX:"", nuocSX:""
+    });
+    ["bni_ten","bni_thuongmai","bni_kyma","bni_nhanhieu","bni_namsx","bni_xuatxu","bni_hangsx","bni_cauhinh","bni_dvt","bni_sl","bni_dg"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  }
+  const prev=document.getElementById("bni_tt_preview"); if(prev)prev.textContent="0 đ";
+  renderBGItems();kiemTraVuotRealtime();
 };
 window.xoaBGItem=function(idx){
   const it=bgItems[idx];
@@ -3815,7 +4025,13 @@ function mapCols(headers) {
     if (!m.sdk      && (lh.includes("gđklh") || lh.includes("gpnk") || lh.includes("số đăng") || lh.includes("sdk"))) m.sdk=i;
     if (!m.cssx     && (lh.includes("cơ sở") || lh.includes("co so") || lh.includes("sản xuất") && lh.includes("cơ"))) m.cssx=i;
     if (!m.nuoc     && (lh.includes("nước") || lh.includes("nuoc") || (lh.includes("sản xuất") && !lh.includes("cơ")))) m.nuoc=i;
-    if (!m.dvt      && (lh.includes("đvt") || lh.includes("đơn vị"))) m.dvt=i;
+    if (!m.thuongmai && (lh.includes("thương mại") || lh.includes("thuong mai"))) m.thuongmai=i;
+    if (!m.kyma      && (lh.includes("ký mã") || lh.includes("ky ma") || lh.includes("mã hiệu"))) m.kyma=i;
+    if (!m.nhanhieu  && (lh.includes("nhãn hiệu") || lh.includes("nhan hieu"))) m.nhanhieu=i;
+    if (!m.namsx     && (lh.includes("năm sản") || lh.includes("nam san"))) m.namsx=i;
+    if (!m.xuatxu    && (lh.includes("xuất xứ") || lh.includes("xuat xu") || (lh.includes("xuất") && lh.includes("xứ")))) m.xuatxu=i;
+    if (!m.hangsx    && (lh.includes("hãng sản") || lh.includes("hang san") || lh.includes("hãng sx"))) m.hangsx=i;
+    if (!m.cauhinh   && (lh.includes("cấu hình") || lh.includes("cau hinh") || lh.includes("kỹ thuật") || lh.includes("tính năng"))) m.cauhinh=i;
     if (!m.sl       && (lh.includes("số lượng") || lh==="sl" || lh==="slg" || lh.includes("qty"))) m.sl=i;
     if (!m.dg       && (lh.includes("đơn giá") || lh.includes("giá") && !lh.includes("thành"))) m.dg=i;
   });
@@ -3837,7 +4053,7 @@ window.importExcel=function(input){
         if(r.some(c=>c.includes("tên thuốc")||c.includes("tên hàng")||(c.includes("tên")&&!c.includes("gợi ý")&&!c.includes("bắt buộc")))){headerIdx=i;break;}
       }
       const m = mapCols(rows[headerIdx].map(c=>String(c)));
-      if(m.ten===undefined){showToast("Không tìm thấy cột Tên thuốc!","error");return;}
+      if(m.ten===undefined){showToast("Không tìm thấy cột Tên thuốc / Tên hàng hóa!","error");return;}
       const newItems=[];
       for(let j=headerIdx+1;j<rows.length;j++){
         const row=rows[j];
@@ -3850,15 +4066,23 @@ window.importExcel=function(input){
           id:"HH_"+Date.now()+"_"+Math.random().toString(36).slice(2,5),
           maThuoc:  String(row[m.ma!==undefined?m.ma:0]||"").trim(),
           ten,
-          hoatChat: String(row[m.hoatchat!==undefined?m.hoatchat:2]||"").trim(),
-          nongDo:   String(row[m.nongdo!==undefined?m.nongdo:3]||"").trim(),
-          dangBaoShe:String(row[m.dbc!==undefined?m.dbc:4]||"").trim(),
-          quyCach:  String(row[m.quycach!==undefined?m.quycach:5]||"").trim(),
-          hanDung:  String(row[m.handung!==undefined?m.handung:6]||"").trim(),
-          sdk:      String(row[m.sdk!==undefined?m.sdk:7]||"").trim(),
-          coSoSX:   String(row[m.cssx!==undefined?m.cssx:8]||"").trim(),
-          nuocSX:   String(row[m.nuoc!==undefined?m.nuoc:9]||"").trim(),
-          dvt:      String(row[m.dvt!==undefined?m.dvt:10]||"").trim()||"---",
+          hoatChat: String(row[m.hoatchat!==undefined?m.hoatchat:-1]||"").trim(),
+          nongDo:   String(row[m.nongdo!==undefined?m.nongdo:-1]||"").trim(),
+          dangBaoShe:String(row[m.dbc!==undefined?m.dbc:-1]||"").trim(),
+          quyCach:  String(row[m.quycach!==undefined?m.quycach:-1]||"").trim(),
+          hanDung:  String(row[m.handung!==undefined?m.handung:-1]||"").trim(),
+          sdk:      String(row[m.sdk!==undefined?m.sdk:-1]||"").trim(),
+          coSoSX:   String(row[m.cssx!==undefined?m.cssx:-1]||"").trim(),
+          nuocSX:   String(row[m.nuoc!==undefined?m.nuoc:-1]||"").trim(),
+          // VTYT fields
+          tenThuongMai:String(row[m.thuongmai!==undefined?m.thuongmai:-1]||"").trim(),
+          kyMaHieu: String(row[m.kyma!==undefined?m.kyma:-1]||"").trim(),
+          nhanHieu: String(row[m.nhanhieu!==undefined?m.nhanhieu:-1]||"").trim(),
+          namSX:    String(row[m.namsx!==undefined?m.namsx:-1]||"").trim(),
+          xuatXu:   String(row[m.xuatxu!==undefined?m.xuatxu:-1]||"").trim(),
+          hangSX:   String(row[m.hangsx!==undefined?m.hangsx:-1]||"").trim(),
+          cauHinhKT:String(row[m.cauhinh!==undefined?m.cauhinh:-1]||"").trim(),
+          dvt:      String(row[m.dvt!==undefined?m.dvt:m.thuongmai!==undefined?8:10]||"").trim()||"---",
           soLuong:sl, donGia:dg
         });
       }
@@ -3870,61 +4094,85 @@ window.importExcel=function(input){
   reader.readAsArrayBuffer(file);
 };
 // Các header cho file mẫu đầy đủ
-const HEADERS_MAU = [
+// (constants and taoFileExcelMau moved above)
+
+// ── Cột mẫu Excel ──
+const HEADERS_MAU_THUOC = [
   "Mã thuốc","Tên thuốc *","Tên hoạt chất/Thành phần",
   "Nồng độ, hàm lượng","Dạng bào chế","Quy cách đóng gói",
   "Hạn dùng (tháng)","GĐKLH hoặc GPNK","Cơ sở sản xuất",
   "Nước sản xuất","Đơn vị tính *","Số lượng *","Đơn giá có VAT (VND) *"
 ];
-const HINT_ROW = [
+const HINT_ROW_THUOC = [
   "VD: 001","Bắt buộc","Tùy chọn",
   "VD: 500mg","Viên nén...","Hộp 10 vỉ x 10 viên",
   "VD: 36","VD: VD-12345-10","Tên công ty SX",
   "Việt Nam","Hộp, Viên...","Bắt buộc","Bắt buộc (số nguyên)"
 ];
-const SAMPLE_ROWS = [
+const SAMPLE_ROWS_THUOC = [
   ["TTB-001","Paracetamol 500mg","Paracetamol","500mg","Viên nén","Hộp 10 vỉ x 10 viên","36","VD-25741-20","Công ty CP Dược Hậu Giang","Việt Nam","Hộp",200,6600],
-  ["VX-001","Menquadfi","Meningococcal","","Dung dịch tiêm","Hộp 1 lọ x 0.5ml","36","GPNK-1234-21","Sanofi Pasteur","Pháp","Lọ",50,1653750],
-  ["VC-001","Influvac tetra","Influenza quadrivalent","","Hỗn dịch tiêm","Hộp 1 ống x 0.5ml","12","GPNK-5678-22","Abbott Biologicals","Hà Lan","Hộp",200,264000],
 ];
 
-function taoFileExcelMau(tenSheet, soHD, danhSachHH) {
+const HEADERS_MAU_VTYT = [
+  "Tên hàng hóa *","Tên thương mại","Ký mã hiệu","Nhãn hiệu",
+  "Năm sản xuất","Xuất xứ","Hãng sản xuất",
+  "Cấu hình, tính năng kỹ thuật cơ bản",
+  "Đơn vị tính *","Số lượng *","Đơn giá có VAT (VND) *"
+];
+const HINT_ROW_VTYT = [
+  "Bắt buộc","Tên thương mại","VD: BSM-3562","VD: NIHON KOHDEN",
+  "VD: Năm 2025 trở về sau","VD: Nhật Bản","Hãng SX",
+  "Nhập cấu hình kỹ thuật...",
+  "Cái, Bộ, Máy...","Bắt buộc","Bắt buộc"
+];
+const SAMPLE_ROWS_VTYT = [
+  ["Máy theo dõi bệnh nhân","Máy theo dõi bệnh nhân","BSM-3562","NIHON KOHDEN","Năm 2025 trở về sau","Nhật Bản","Nihon Kohden Corporation","- Nhà sản xuất đạt ISO 13485\n- Màn hình màu\n- Đo SpO2, mạch, huyết áp","Máy",1,162750000],
+];
+
+function taoFileExcelMauTheo(loai, soHD, danhSachHH) {
   const wb = XLSX.utils.book_new();
-  // Dữ liệu sheet
-  const rows = [
-    HEADERS_MAU,
-    HINT_ROW,
-    ...SAMPLE_ROWS,
-    ...Array(15).fill(Array(HEADERS_MAU.length).fill(""))
-  ];
-  // Nếu có danh sách HH từ HĐ, thêm vào thay sample
+  const isThuoc = !loai || loai==="Thuốc" || loai==="Vắc xin";
+  const headers = isThuoc ? HEADERS_MAU_THUOC : HEADERS_MAU_VTYT;
+  const hintRow = isThuoc ? HINT_ROW_THUOC : HINT_ROW_VTYT;
+  const sampleRows = isThuoc ? SAMPLE_ROWS_THUOC : SAMPLE_ROWS_VTYT;
+
+  let dataRows;
   if (danhSachHH && danhSachHH.length > 0) {
-    rows.splice(2, SAMPLE_ROWS.length); // xóa sample
-    danhSachHH.forEach(hh => rows.splice(2, 0, [
-      hh.maThuoc||"", hh.ten, hh.hoatChat||"",
-      hh.nongDo||"", hh.dangBaoShe||"", hh.quyCach||"",
-      hh.hanDung||"", hh.sdk||"", hh.coSoSX||"",
-      hh.nuocSX||"", hh.dvt, hh.soLuong, hh.donGia
-    ]));
+    if (isThuoc) {
+      dataRows = danhSachHH.map(hh=>[hh.maThuoc||"",hh.ten,hh.hoatChat||"",hh.nongDo||"",hh.dangBaoShe||"",hh.quyCach||"",hh.hanDung||"",hh.sdk||"",hh.coSoSX||"",hh.nuocSX||"",hh.dvt,hh.soLuong,hh.donGia]);
+    } else {
+      dataRows = danhSachHH.map(hh=>[hh.ten,hh.tenThuongMai||"",hh.kyMaHieu||"",hh.nhanHieu||"",hh.namSX||"",hh.xuatXu||"",hh.hangSX||"",hh.cauHinhKT||"",hh.dvt,hh.soLuong,hh.donGia]);
+    }
+  } else {
+    dataRows = sampleRows;
   }
+
+  const rows = [headers, hintRow, ...dataRows, ...Array(15).fill(Array(headers.length).fill(""))];
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws["!cols"] = [
-    {wch:12},{wch:30},{wch:28},{wch:16},{wch:14},{wch:22},
-    {wch:12},{wch:18},{wch:28},{wch:12},{wch:10},{wch:10},{wch:16}
-  ];
-  XLSX.utils.book_append_sheet(wb, ws, tenSheet);
+  const wch = isThuoc
+    ? [{wch:12},{wch:30},{wch:28},{wch:16},{wch:14},{wch:22},{wch:12},{wch:18},{wch:28},{wch:12},{wch:10},{wch:10},{wch:16}]
+    : [{wch:30},{wch:22},{wch:14},{wch:18},{wch:22},{wch:12},{wch:24},{wch:50},{wch:10},{wch:10},{wch:16}];
+  ws["!cols"] = wch;
+  XLSX.utils.book_append_sheet(wb, ws, "DanhMuc");
   return wb;
 }
 
+// Backward compat alias
+function taoFileExcelMau(tenSheet, soHD, danhSachHH) {
+  return taoFileExcelMauTheo("Thuốc", soHD, danhSachHH);
+}
+
 window.taiMauExcelHD = function() {
-  const wb = taoFileExcelMau("DanhMucHopDong", null, null);
-  XLSX.writeFile(wb, "Mau_DanhMuc_HopDong.xlsx");
+  const loai = document.getElementById("f_loaiHD")?.value || "";
+  const wb = taoFileExcelMauTheo(loai, null, null);
+  XLSX.writeFile(wb, `Mau_DanhMuc_${loai||"HopDong"}.xlsx`);
   showToast("Đã tải file mẫu danh mục hợp đồng!");
 };
 
 window.taiMauExcelBG = function() {
   const hdHH = currentHD ? (currentHD.hangHoa||[]) : null;
-  const wb = taoFileExcelMau("DanhMucBanGiao", currentHD?.soHD, hdHH);
+  const loai = currentHD?.loaiHD || "Thuốc";
+  const wb = taoFileExcelMauTheo(loai, currentHD?.soHD, hdHH);
   const tenFile = currentHD ? `Mau_BanGiao_${currentHD.soHD}.xlsx` : "Mau_BanGiao.xlsx";
   XLSX.writeFile(wb, tenFile);
   showToast("Đã tải file mẫu"+(hdHH&&hdHH.length>0?` (${hdHH.length} mặt hàng từ HĐ)`:"")+"|");
@@ -4424,59 +4672,106 @@ function renderItemsTable(items, mode, showNote, canEdit, ctx){
   if(!items.length)return'<div style="text-align:center;padding:12px;color:#94a3b8;font-size:12px">Chưa có hàng hóa</div>';
   const total=calcItemsTotal(items);
   const isBG = mode==="bg";
+  const loai = currentHD?.loaiHD || "";
+  const isThuoc = !loai || loai==="Thuốc" || loai==="Vắc xin";
   const noteCol = showNote ? '<th style="width:100px;max-width:100px">Ghi chú</th>' : '';
   const editCol = canEdit ? '<th style="min-width:60px">Sửa</th>' : '';
-  return`<div class="table-wrap" style=""><table class="sticky-table" style="font-size:13px;width:100%;table-layout:fixed"><thead><tr>
-    <th class="sticky sticky-1" style="width:2%">#</th>
-    <th class="sticky sticky-2" style="width:4%">Mã</th>
-    <th class="sticky sticky-3" style="width:8%">Tên thuốc</th>
-    <th class="sticky sticky-4" style="width:10%">Hoạt chất</th>
-    <th style="width:9%">Nồng độ</th>
-    <th style="width:4%">Dạng BC</th>
-    <th style="width:4%">Quy cách</th>
-    <th style="width:3%;text-align:center">Hạn<br>dùng</th>
-    <th style="width:9%;word-break:break-word">GĐKLH/GPNK</th>
-    <th style="width:7%;word-break:break-word">Cơ sở SX</th>
-    <th style="width:4%">Nước SX</th>
-    <th style="width:3%">ĐVT</th>
-    <th style="width:4%;text-align:right">${isBG?"SL BG":"SL HĐ"}</th>
-    <th style="text-align:right;white-space:nowrap">Đơn giá</th>
-    <th style="width:6%;text-align:right">Thành tiền</th>
-    ${!isBG?'<th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap">SL ĐC</th><th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap">TT sau ĐC</th>':''}
-    ${noteCol}${editCol}
-  </tr></thead><tbody>
-    ${items.map((it,i)=>`<tr>
-      <td class="sticky sticky-1" style="color:#94a3b8;text-align:center">${i+1}</td>
-      <td class="sticky sticky-2" style="color:#7c3aed;white-space:nowrap">${it.maThuoc||"---"}</td>
-      <td class="sticky sticky-3" style="font-weight:600;color:#1e40af">${it.ten}</td>
-      <td class="sticky sticky-4" style="color:#0ea5e9">${it.hoatChat||"---"}</td>
-      <td style="word-break:break-word">${it.nongDo||"---"}</td>
-      <td style="word-break:break-word">${it.dangBaoShe||"---"}</td>
-      <td style="word-break:break-word">${it.quyCach||"---"}</td>
-      <td style="text-align:center">${it.hanDung||"---"}</td>
-      <td style="color:#7c3aed;word-break:break-word;min-width:0">${it.sdk||"---"}</td>
-      <td style="word-break:break-word">${it.coSoSX||"---"}</td>
-      <td style="white-space:nowrap">${it.nuocSX||"---"}</td>
-      <td style="white-space:nowrap">${it.dvt}</td>
-      <td style="text-align:right;font-weight:600">${fmtSo(it.soLuong)}</td>
-      <td style="text-align:right">${fmtSo(it.donGia)}</td>
-      <td style="text-align:right;font-weight:700;color:#22c55e">${fmtSo((Number(it.soLuong)||0)*(Number(it.donGia)||0))}</td>
-      ${!isBG?('<td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+(it.tongDC?'<button onclick="moModalDCXem(\''+it.id+'\')" style="background:none;border:none;color:#1e40af;font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;padding:0;font-size:inherit" title="Xem lịch sử điều chỉnh">'+fmtSo((Number(it.soLuong)||0)+(Number(it.tongDC)||0))+'</button>':fmtSo((Number(it.soLuong)||0)+(Number(it.tongDC)||0)))+'</td><td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+fmtSo(((Number(it.soLuong)||0)+(Number(it.tongDC)||0))*(Number(it.donGia)||0))+'</td>'):''}
-      ${showNote?`<td><div contenteditable="${canEdit?'true':'false'}" data-hhid="${it.id||''}" onblur="luuGhiChuItem(this,'${ctx||'hd'}')" style="width:100px;max-width:100px;min-height:20px;padding:4px 5px;border-radius:6px;border:1px solid ${it.ghiChu?'#fde047':'#e2e8f0'};background:${it.ghiChu?'#fefce8':'#fff'};color:#92400e;font-size:11px;outline:none;cursor:${canEdit?'text':'default'}" title="${canEdit?'Click để nhập ghi chú':''}">${it.ghiChu||''}</div></td>`:""}
-      ${canEdit?`<td class="col-sua"><button class="btn btn-edit-bg btn-sm" onclick="moSuaHH('${it.id||""}')" title="Chỉnh sửa">✏️</button></td>`:""}
-    </tr>`).join("")}
-    <tr class="tong-row">
-      <td class="sticky sticky-1"></td>
-      <td class="sticky sticky-2"></td>
-      <td class="sticky sticky-3"></td>
-      <td class="sticky sticky-4"></td>
-      <td colspan="10" style="text-align:right">Tổng:</td>
-      <td style="text-align:right;color:#22c55e;white-space:nowrap">${fmtSo(total)} đ</td>
-      ${!isBG?('<td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+fmtSo(items.reduce((s,it)=>s+(Number(it.soLuong)||0)+(Number(it.tongDC)||0),0))+'</td><td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+fmtSo(items.reduce((s,it)=>s+((Number(it.soLuong)||0)+(Number(it.tongDC)||0))*(Number(it.donGia)||0),0))+' đ</td>'):''}
-      ${showNote?"<td></td>":""}
-      ${canEdit?"<td></td>":""}
-    </tr>
-  </tbody></table></div>`;
+
+  if (isThuoc) {
+    return`<div class="table-wrap"><table class="sticky-table" style="font-size:13px;width:100%;table-layout:fixed"><thead><tr>
+      <th class="sticky sticky-1" style="width:2%">#</th>
+      <th class="sticky sticky-2" style="width:4%">Mã</th>
+      <th class="sticky sticky-3" style="width:8%">Tên thuốc</th>
+      <th class="sticky sticky-4" style="width:10%">Hoạt chất</th>
+      <th style="width:9%">Nồng độ</th>
+      <th style="width:4%">Dạng BC</th>
+      <th style="width:4%">Quy cách</th>
+      <th style="width:3%;text-align:center">Hạn<br>dùng</th>
+      <th style="width:9%;word-break:break-word">GĐKLH/GPNK</th>
+      <th style="width:7%;word-break:break-word">Cơ sở SX</th>
+      <th style="width:4%">Nước SX</th>
+      <th style="width:3%">ĐVT</th>
+      <th style="width:4%;text-align:right">${isBG?"SL BG":"SL HĐ"}</th>
+      <th style="text-align:right;white-space:nowrap">Đơn giá</th>
+      <th style="width:6%;text-align:right">Thành tiền</th>
+      ${!isBG?'<th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap">SL ĐC</th><th style="text-align:right;background:#eff6ff;color:#1e40af;white-space:nowrap">TT sau ĐC</th>':''}
+      ${noteCol}${editCol}
+    </tr></thead><tbody>
+      ${items.map((it,i)=>`<tr>
+        <td class="sticky sticky-1" style="color:#94a3b8;text-align:center">${i+1}</td>
+        <td class="sticky sticky-2" style="color:#7c3aed;white-space:nowrap">${it.maThuoc||"---"}</td>
+        <td class="sticky sticky-3" style="font-weight:600;color:#1e40af">${it.ten}</td>
+        <td class="sticky sticky-4" style="color:#0ea5e9">${it.hoatChat||"---"}</td>
+        <td style="word-break:break-word">${it.nongDo||"---"}</td>
+        <td style="word-break:break-word">${it.dangBaoShe||"---"}</td>
+        <td style="word-break:break-word">${it.quyCach||"---"}</td>
+        <td style="text-align:center">${it.hanDung||"---"}</td>
+        <td style="color:#7c3aed;word-break:break-word;min-width:0">${it.sdk||"---"}</td>
+        <td style="word-break:break-word">${it.coSoSX||"---"}</td>
+        <td style="white-space:nowrap">${it.nuocSX||"---"}</td>
+        <td style="white-space:nowrap">${it.dvt}</td>
+        <td style="text-align:right;font-weight:600">${fmtSo(it.soLuong)}</td>
+        <td style="text-align:right">${fmtSo(it.donGia)}</td>
+        <td style="text-align:right;font-weight:700;color:#22c55e">${fmtSo((Number(it.soLuong)||0)*(Number(it.donGia)||0))}</td>
+        ${!isBG?('<td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+(it.tongDC?'<button onclick="moModalDCXem(\''+it.id+'\')" style="background:none;border:none;color:#1e40af;font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;padding:0;font-size:inherit" title="Xem lịch sử điều chỉnh">'+fmtSo((Number(it.soLuong)||0)+(Number(it.tongDC)||0))+'</button>':fmtSo((Number(it.soLuong)||0)+(Number(it.tongDC)||0)))+'</td><td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+fmtSo(((Number(it.soLuong)||0)+(Number(it.tongDC)||0))*(Number(it.donGia)||0))+'</td>'):''}
+        ${showNote?`<td><div contenteditable="${canEdit?'true':'false'}" data-hhid="${it.id||''}" onblur="luuGhiChuItem(this,'${ctx||'hd'}')" style="width:100px;max-width:100px;min-height:20px;padding:4px 5px;border-radius:6px;border:1px solid ${it.ghiChu?'#fde047':'#e2e8f0'};background:${it.ghiChu?'#fefce8':'#fff'};color:#92400e;font-size:11px;outline:none;cursor:${canEdit?'text':'default'}" title="${canEdit?'Click để nhập ghi chú':''}">${it.ghiChu||''}</div></td>`:""}
+        ${canEdit?`<td class="col-sua"><button class="btn btn-edit-bg btn-sm" onclick="moSuaHH('${it.id||""}')" title="Chỉnh sửa">✏️</button></td>`:""}
+      </tr>`).join("")}
+      <tr class="tong-row">
+        <td class="sticky sticky-1"></td><td class="sticky sticky-2"></td>
+        <td class="sticky sticky-3"></td><td class="sticky sticky-4"></td>
+        <td colspan="10" style="text-align:right">Tổng:</td>
+        <td style="text-align:right;color:#22c55e;white-space:nowrap">${fmtSo(total)} đ</td>
+        ${!isBG?('<td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+fmtSo(items.reduce((s,it)=>s+(Number(it.soLuong)||0)+(Number(it.tongDC)||0),0))+'</td><td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700;white-space:nowrap">'+fmtSo(items.reduce((s,it)=>s+((Number(it.soLuong)||0)+(Number(it.tongDC)||0))*(Number(it.donGia)||0),0))+' đ</td>'):''}
+        ${showNote?"<td></td>":""}${canEdit?"<td></td>":""}
+      </tr>
+    </tbody></table></div>`;
+  } else {
+    // VTYT / Trang thiết bị / Hóa chất
+    return`<div class="table-wrap"><table class="sticky-table" style="font-size:12px;width:100%"><thead><tr style="background:#1e3a8a;color:#fff">
+      <th style="width:30px;text-align:center">#</th>
+      <th style="min-width:140px">Tên hàng hóa</th>
+      <th style="min-width:110px">Tên thương mại</th>
+      <th style="min-width:80px">Ký mã hiệu</th>
+      <th style="min-width:90px">Nhãn hiệu</th>
+      <th style="min-width:100px">Năm SX</th>
+      <th style="min-width:70px">Xuất xứ</th>
+      <th style="min-width:110px">Hãng SX</th>
+      <th style="min-width:180px">Cấu hình KT</th>
+      <th style="min-width:55px;text-align:center">ĐVT</th>
+      <th style="min-width:65px;text-align:right">${isBG?"SL BG":"SL HĐ"}</th>
+      <th style="min-width:95px;text-align:right">Đơn giá</th>
+      <th style="min-width:100px;text-align:right">Thành tiền</th>
+      ${!isBG?'<th style="min-width:80px;text-align:right;background:#7c3aed20;color:#c4b5fd">SL ĐC</th><th style="min-width:100px;text-align:right;background:#7c3aed20;color:#c4b5fd">TT sau ĐC</th>':''}
+      ${noteCol}${editCol}
+    </tr></thead><tbody>
+      ${items.map((it,i)=>`<tr style="background:${i%2===0?'#fff':'#f8fafc'}">
+        <td style="text-align:center;color:#94a3b8;font-size:11px">${i+1}</td>
+        <td style="font-weight:600;color:#1e40af;word-break:break-word">${it.ten}</td>
+        <td style="word-break:break-word">${it.tenThuongMai||"---"}</td>
+        <td style="white-space:nowrap;color:#7c3aed">${it.kyMaHieu||"---"}</td>
+        <td style="word-break:break-word">${it.nhanHieu||"---"}</td>
+        <td style="word-break:break-word">${it.namSX||"---"}</td>
+        <td style="white-space:nowrap">${it.xuatXu||"---"}</td>
+        <td style="word-break:break-word">${it.hangSX||"---"}</td>
+        <td style="font-size:11px;max-width:200px"><div style="max-height:72px;overflow-y:auto;white-space:pre-wrap">${it.cauHinhKT||"---"}</div></td>
+        <td style="text-align:center">${it.dvt}</td>
+        <td style="text-align:right;font-weight:600">${fmtSo(it.soLuong)}</td>
+        <td style="text-align:right">${fmtSo(it.donGia)}</td>
+        <td style="text-align:right;font-weight:700;color:#22c55e">${fmtSo((Number(it.soLuong)||0)*(Number(it.donGia)||0))}</td>
+        ${!isBG?('<td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700">'+(it.tongDC?'<button onclick="moModalDCXem(\''+it.id+'\')" style="background:none;border:none;color:#1e40af;font-weight:700;cursor:pointer;padding:0;font-size:inherit">'+fmtSo((Number(it.soLuong)||0)+(Number(it.tongDC)||0))+'</button>':fmtSo((Number(it.soLuong)||0)+(Number(it.tongDC)||0)))+'</td><td style="text-align:right;background:#eff6ff;color:#1e40af;font-weight:700">'+fmtSo(((Number(it.soLuong)||0)+(Number(it.tongDC)||0))*(Number(it.donGia)||0))+'</td>'):''}
+        ${showNote?`<td><div contenteditable="${canEdit?'true':'false'}" data-hhid="${it.id||''}" onblur="luuGhiChuItem(this,'${ctx||'hd'}')" style="width:100px;max-width:100px;min-height:20px;padding:4px 5px;border-radius:6px;border:1px solid ${it.ghiChu?'#fde047':'#e2e8f0'};background:${it.ghiChu?'#fefce8':'#fff'};font-size:11px;outline:none">${it.ghiChu||''}</div></td>`:""}
+        ${canEdit?`<td><button class="btn btn-edit-bg btn-sm" onclick="moSuaHH('${it.id||""}')" title="Chỉnh sửa">✏️</button></td>`:""}
+      </tr>`).join("")}
+      <tr style="background:#f1f5f9;font-weight:800">
+        <td colspan="10" style="text-align:right;padding:8px">Tổng:</td>
+        <td></td><td></td>
+        <td style="text-align:right;color:#22c55e;padding:8px">${fmtSo(total)} đ</td>
+        ${!isBG?('<td style="text-align:right;background:#eff6ff;color:#1e40af">'+fmtSo(items.reduce((s,it)=>s+(Number(it.soLuong)||0)+(Number(it.tongDC)||0),0))+'</td><td style="text-align:right;background:#eff6ff;color:#1e40af">'+fmtSo(items.reduce((s,it)=>s+((Number(it.soLuong)||0)+(Number(it.tongDC)||0))*(Number(it.donGia)||0),0))+' đ</td>'):''}
+        ${showNote?"<td></td>":""}${canEdit?"<td></td>":""}
+      </tr>
+    </tbody></table></div>`;
+  }
 }
 function calcTotal(items){return(items||[]).reduce((s,it)=>s+(Number(it.soLuong)||0)*(Number(it.donGia)||0),0);}
 function calcItemsTotal(items){return calcTotal(items);}
