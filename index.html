@@ -685,13 +685,35 @@ th{position:relative;}
     <!-- Layout 2 cột: picker trái, đã chọn phải -->
     <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:14px;height:calc(96vh - 160px)">
       <!-- Cột trái: tìm & chọn mặt hàng -->
-      <div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:6px;min-height:0">
         <div style="font-size:12px;font-weight:700;color:#374151">📦 Chọn mặt hàng</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <input id="gh_searchHH" placeholder="🔍 Tìm hàng hóa..." style="flex:1;font-size:12px;min-width:120px" oninput="filterGHItems(this.value)">
-          <select id="gh_filterHD" style="font-size:12px" onchange="filterGHItems(document.getElementById('gh_searchHH').value)">
+          <input id="gh_searchHH" placeholder="🔍 Tìm tên thuốc, hoạt chất..." style="flex:2;font-size:12px;min-width:140px" oninput="filterGHItems(this.value)">
+          <select id="gh_filterHD" style="font-size:12px;flex:1;min-width:100px" onchange="filterGHItems(document.getElementById('gh_searchHH').value)">
             <option value="">Tất cả HĐ</option>
           </select>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <input id="gh_filterNCC" list="gh_ncc_list" placeholder="🏢 Nhà cung cấp..." style="font-size:12px;flex:2;min-width:140px" oninput="filterGHItems(document.getElementById('gh_searchHH').value)" autocomplete="off">
+          <datalist id="gh_ncc_list"></datalist>
+          <input id="gh_filterLoai" list="gh_loai_list" placeholder="📋 Loại HĐ..." style="font-size:12px;flex:1;min-width:100px" oninput="filterGHItems(document.getElementById('gh_searchHH').value)" autocomplete="off">
+          <datalist id="gh_loai_list">
+            <option value="Thuốc">
+            <option value="VTYT">
+            <option value="Hóa chất">
+            <option value="Trang thiết bị">
+            <option value="Vắc xin">
+          </datalist>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <input id="gh_filterQDTT" list="gh_qdtt_list" placeholder="🏆 QĐ trúng thầu..." style="font-size:12px;flex:2;min-width:140px" oninput="filterGHItems(document.getElementById('gh_searchHH').value)" autocomplete="off">
+          <datalist id="gh_qdtt_list"></datalist>
+          <select id="gh_filterConLai" style="font-size:12px;flex:1;min-width:100px" onchange="filterGHItems(document.getElementById('gh_searchHH').value)">
+            <option value="">Tất cả</option>
+            <option value="con">Còn hàng (>0)</option>
+            <option value="het">Đã giao hết (=0)</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="['gh_searchHH','gh_filterHD','gh_filterNCC','gh_filterLoai','gh_filterQDTT'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});document.getElementById('gh_filterConLai').value='';filterGHItems('')" title="Xoá bộ lọc">✕</button>
         </div>
         <div id="ghItemPickerWrap" style="flex:1;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px"></div>
       </div>
@@ -1983,6 +2005,11 @@ window.moFormThemGoiHang = function(mode) {
   document.getElementById("gh_nhacLai").value = "7";
   document.getElementById("gh_ghiChu").value = "";
   document.getElementById("ghFormTitle").textContent = "📋 Tạo dự trù mới";
+  // Reset filters
+  const els = ["gh_searchHH","gh_filterHD","gh_filterLoai","gh_filterConLai","gh_filterQDTT","gh_filterNCC"];
+  els.forEach(id => { const el = document.getElementById(id); if(el) el.value=""; });
+  const nccDl = document.getElementById("gh_ncc_list"); if(nccDl) nccDl.innerHTML='';
+  const qdDl  = document.getElementById("gh_qdtt_list"); if(qdDl)  qdDl.innerHTML='';
   // Ẩn phần gọi hàng khi tạo dự trù mới
   document.getElementById("gh_goiHangSection").style.display = "none";
   // Populate HĐ filter
@@ -1994,7 +2021,11 @@ window.moFormThemGoiHang = function(mode) {
 };
 
 window.filterGHItems = function(q) {
-  const hdFilter = document.getElementById("gh_filterHD").value;
+  const hdFilter   = document.getElementById("gh_filterHD")?.value || "";
+  const nccFilter  = (document.getElementById("gh_filterNCC")?.value || "").trim().toLowerCase();
+  const loaiFilter = (document.getElementById("gh_filterLoai")?.value || "").trim().toLowerCase();
+  const qdttFilter = (document.getElementById("gh_filterQDTT")?.value || "").trim().toLowerCase();
+  const conLaiFilter = document.getElementById("gh_filterConLai")?.value || "";
 
   // Tính tổng đã bàn giao theo itemId từ allHD
   const daBGMap = {};
@@ -2010,20 +2041,41 @@ window.filterGHItems = function(q) {
   let items = [];
   allHD.forEach(hd => {
     if (hdFilter && hd.soHD !== hdFilter) return;
+    if (nccFilter && !(hd.nhaCungCap||"").toLowerCase().includes(nccFilter)) return;
+    if (loaiFilter && !(hd.loaiHD||"").toLowerCase().includes(loaiFilter)) return;
+    if (qdttFilter && !(hd.soQDTrungThau||"").toLowerCase().includes(qdttFilter)) return;
     (hd.hangHoa||[]).forEach(it => {
       const slDC = (it.soLuong||0)+(it.tongDC||0);
       const daBG = daBGMap[it.id]||0;
       const conLai = slDC - daBG;
+      if (conLaiFilter === "con" && conLai <= 0) return;
+      if (conLaiFilter === "het" && conLai > 0) return;
       const hay = [it.ten, it.hoatChat, it.maThuoc, hd.soHD, hd.nhaCungCap].join(" ").toLowerCase();
       if (q && !hay.includes(q.toLowerCase())) return;
       const key = it.id;
       items.push({key, ten:it.ten, hoatChat:it.hoatChat||"", soHD:hd.soHD, nhaCungCap:hd.nhaCungCap, dvt:it.dvt, slDC, daBG, conLai, id:it.id, itemId:it.id, soQDTT:hd.soQDTrungThau||"", ngayTT:hd.ngayTrungThau||""});
     });
   });
+
+  // Populate datalist NCC
+  const nccDl = document.getElementById("gh_ncc_list");
+  if (nccDl && nccDl.children.length === 0) {
+    const nccs = [...new Set(allHD.map(h=>h.nhaCungCap).filter(Boolean))].sort();
+    nccDl.innerHTML = nccs.map(ncc=>`<option value="${escHtml(ncc)}">`).join('');
+  }
+  // Populate datalist QĐ trúng thầu
+  const qdDl = document.getElementById("gh_qdtt_list");
+  if (qdDl && qdDl.children.length === 0) {
+    const qds = [...new Set(allHD.map(h=>h.soQDTrungThau).filter(Boolean))].sort();
+    qdDl.innerHTML = qds.map(qd=>`<option value="${escHtml(qd)}">`).join('');
+  }
+
   const wrap = document.getElementById("ghItemPickerWrap");
-  if (!items.length) { wrap.innerHTML = '<div style="text-align:center;padding:16px;color:#94a3b8;font-size:12px">Không có mặt hàng</div>'; return; }
-  wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px">
-    <thead><tr style="background:#f8fafc;position:sticky;top:0">
+  const total = items.length;
+  if (!items.length) { wrap.innerHTML = '<div style="text-align:center;padding:16px;color:#94a3b8;font-size:12px">Không có mặt hàng nào phù hợp</div>'; return; }
+  wrap.innerHTML = `<div style="padding:4px 8px;background:#f0f9ff;font-size:11px;color:#0369a1;border-bottom:1px solid #e2e8f0">Hiển thị <b>${total}</b> mặt hàng</div>
+  <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="background:#f8fafc;position:sticky;top:0;z-index:1">
       <th style="padding:6px 8px;width:32px"></th>
       <th style="padding:6px 8px;text-align:left">Tên thuốc</th>
       <th style="padding:6px 8px;text-align:left">Hoạt chất</th>
@@ -2040,7 +2092,7 @@ window.filterGHItems = function(q) {
         <td style="padding:5px 8px;text-align:center"><input type="checkbox" ${sel?'checked':''} style="pointer-events:none"></td>
         <td style="padding:5px 8px">
           <div style="font-weight:600;color:#1e40af">${escHtml(it.ten)}</div>
-          ${it.soQDTT?`<div style="font-size:10px;color:#7c3aed;margin-top:2px">📋 ${escHtml(it.soQDTT)}${it.ngayTT?' · '+fmtNgay(it.ngayTT):''}</div>`:''}
+          ${it.soQDTT?`<div style="font-size:10px;color:#7c3aed;margin-top:1px">📋 ${escHtml(it.soQDTT)}${it.ngayTT?' · '+fmtNgay(it.ngayTT):''}</div>`:''}
         </td>
         <td style="padding:5px 8px;font-size:11px;color:#0ea5e9">${escHtml(it.hoatChat||'—')}</td>
         <td style="padding:5px 8px;font-size:11px"><span style="color:#7c3aed">${escHtml(it.soHD)}</span><br><span style="color:#64748b">${escHtml(it.nhaCungCap||'')}</span></td>
